@@ -1,85 +1,794 @@
-// Platanus Hack 25: Snake Game
-// Navigate the snake around the "PLATANUS HACK ARCADE" title made of blocks!
-
 // =============================================================================
-// ARCADE BUTTON MAPPING - COMPLETE TEMPLATE
-// =============================================================================
-// Reference: See button-layout.webp at hack.platan.us/assets/images/arcade/
-//
-// Maps arcade button codes to keyboard keys for local testing.
-// Each arcade code can map to multiple keyboard keys (array values).
-// The arcade cabinet sends codes like 'P1U', 'P1A', etc. when buttons are pressed.
-//
-// To use in your game:
-//   if (key === 'P1U') { ... }  // Works on both arcade and local (via keyboard)
-//
-// CURRENT GAME USAGE (Snake):
-//   - P1U/P1D/P1L/P1R (Joystick) → Snake Direction
-//   - P1A (Button A) or START1 (Start Button) → Restart Game
+// EL HACEDOR - Platanus Hack 25
+// Un juego sobre proteger tu Idea a través del caos
 // =============================================================================
 
+// =============================================================================
+// ARCADE CONTROLS
+// =============================================================================
 const ARCADE_CONTROLS = {
-  // ===== PLAYER 1 CONTROLS =====
-  // Joystick - Left hand on WASD
   'P1U': ['w'],
   'P1D': ['s'],
   'P1L': ['a'],
   'P1R': ['d'],
-  'P1DL': null,  // Diagonal down-left (no keyboard default)
-  'P1DR': null,  // Diagonal down-right (no keyboard default)
-
-  // Action Buttons - Right hand on home row area (ergonomic!)
-  // Top row (ABC): U, I, O  |  Bottom row (XYZ): J, K, L
+  'P1DL': null,
+  'P1DR': null,
   'P1A': ['u'],
   'P1B': ['i'],
   'P1C': ['o'],
   'P1X': ['j'],
   'P1Y': ['k'],
   'P1Z': ['l'],
-
-  // Start Button
   'START1': ['1', 'Enter'],
-
-  // ===== PLAYER 2 CONTROLS =====
-  // Joystick - Right hand on Arrow Keys
   'P2U': ['ArrowUp'],
   'P2D': ['ArrowDown'],
   'P2L': ['ArrowLeft'],
   'P2R': ['ArrowRight'],
-  'P2DL': null,  // Diagonal down-left (no keyboard default)
-  'P2DR': null,  // Diagonal down-right (no keyboard default)
-
-  // Action Buttons - Left hand (avoiding P1's WASD keys)
-  // Top row (ABC): R, T, Y  |  Bottom row (XYZ): F, G, H
+  'P2DL': null,
+  'P2DR': null,
   'P2A': ['r'],
   'P2B': ['t'],
   'P2C': ['y'],
   'P2X': ['f'],
   'P2Y': ['g'],
   'P2Z': ['h'],
-
-  // Start Button
   'START2': ['2']
 };
 
-// Build reverse lookup: keyboard key → arcade button code
 const KEYBOARD_TO_ARCADE = {};
 for (const [arcadeCode, keyboardKeys] of Object.entries(ARCADE_CONTROLS)) {
   if (keyboardKeys) {
-    // Handle both array and single value
     const keys = Array.isArray(keyboardKeys) ? keyboardKeys : [keyboardKeys];
-    keys.forEach(key => {
-      KEYBOARD_TO_ARCADE[key] = arcadeCode;
+    keys.forEach(key => { KEYBOARD_TO_ARCADE[key] = arcadeCode; });
+  }
+}
+
+// =============================================================================
+// CONSTANTS
+// =============================================================================
+const GAME_WIDTH = 800;
+const GAME_HEIGHT = 600;
+const GRAVITY = 800;
+const PLAYER_SPEED = 180;
+const JUMP_VELOCITY = -400;
+const PATH_SAMPLE_RATE = 3;
+const PATH_DELAY_FRAMES = 30;
+const MAX_DISTANCE = 250;
+const DISTANCE_DRAIN_RATE = 0.18;
+
+const GAME_STATE = {
+  INTRO: 'INTRO',
+  LEVEL_INTRO: 'LEVEL_INTRO',
+  PLAYING: 'PLAYING',
+  GAMEOVER: 'GAMEOVER',
+  LEVEL_COMPLETE: 'LEVEL_COMPLETE',
+  ENDING: 'ENDING'
+};
+
+// =============================================================================
+// DATA
+// =============================================================================
+const TEXTS = {
+  intro: {
+    title: "Vestigium",
+    subtitle: "Protege tu Idea a través del caos.\n Un juego simbólico sobre el viaje de un fundador.",
+    start: "[Presiona para empezar]"
+  },
+  levels: [
+    {
+      day: "DÍA 1: EL GARAJE",
+      text: "Una chispa nace en la oscuridad.\nNo la dejes apagar.",
+      ideaName: "La Chispa"
+    },
+    {
+      day: "DÍA 100: LA CONSTRUCCIÓN",
+      text: "Tu prototipo toma forma.\nCada paso cuenta. Cada error duele.",
+      ideaName: "El Prototipo"
+    },
+    {
+      day: "DÍA 365: EL LANZAMIENTO",
+      text: "El mundo es cruel con lo nuevo.\nDefiende lo que construiste.",
+      ideaName: "El Producto"
+    }
+  ],
+  ending: [
+    "Llegaste.",
+    "Protegiste la Chispa.",
+    "Guiaste el Prototipo.",
+    "Defendiste el Producto.",
+    "",
+    "Felicidades, Fundador.",
+    "Has completado la simulación.",
+    "",
+    "Ahora, el desafío real.",
+    "",
+    "PLATANUS HACK '25",
+    "NOS VEMOS EN EL MUNDO REAL."
+  ]
+};
+
+const LEVELS = [
+  {
+    id: 0,
+    name: "El Garaje",
+    bg: 0x1a1a2e,
+    ideaStage: 0,
+    platforms: [
+      { x: 0, y: 560, w: 800, h: 40 },
+      { x: 120, y: 480, w: 120, h: 20 },
+      { x: 280, y: 400, w: 120, h: 20 },
+      { x: 450, y: 320, w: 130, h: 20 },
+      { x: 600, y: 240, w: 150, h: 20 },
+      { x: 680, y: 160, w: 120, h: 20 }
+    ],
+    enemies: [
+      { type: 'magnet', x: 300, y: 510, w: 60, h: 60, name: 'Procrastinación' },
+      { type: 'shadow', x: 0, y: 0, name: 'Síndrome del Impostor' }
+    ],
+    start: { x: 50, y: 500 },
+    exit: { x: 720, y: 130 }
+  },
+  {
+    id: 1,
+    name: "La Fábrica",
+    bg: 0x2a2a4e,
+    ideaStage: 1,
+    platforms: [
+      { x: 0, y: 560, w: 200, h: 40 },
+      { x: 300, y: 480, w: 150, h: 20 },
+      { x: 500, y: 380, w: 100, h: 20 },
+      { x: 200, y: 280, w: 150, h: 20, falling: true },
+      { x: 400, y: 180, w: 150, h: 20 },
+      { x: 600, y: 120, w: 180, h: 20 }
+    ],
+    enemies: [
+      { type: 'bug', x: 300, y: 460, patrol: [300, 430] },
+      { type: 'eye', x: 400, y: 300, rotSpeed: 1.5 },
+      { type: 'bug', x: 600, y: 100, patrol: [600, 750] }
+    ],
+    start: { x: 50, y: 500 },
+    exit: { x: 700, y: 80 }
+  },
+  {
+    id: 2,
+    name: "El Mercado",
+    bg: 0x4a2a4e,
+    ideaStage: 2,
+    platforms: [
+      { x: 0, y: 560, w: 800, h: 40 },
+      { x: 100, y: 450, w: 100, h: 80 },
+      { x: 400, y: 450, w: 100, h: 80 },
+      { x: 600, y: 450, w: 100, h: 80 }
+    ],
+    enemies: [
+      { type: 'cannon', x: 50, y: 50, targetIdea: true },
+      { type: 'cannon', x: 750, y: 50, targetIdea: true },
+      { type: 'cannon', x: 400, y: 0, targetIdea: true },
+      { type: 'bubble', x: 200, y: 300, bouncing: true },
+      { type: 'bubble', x: 600, y: 300, bouncing: true }
+    ],
+    start: { x: 400, y: 500 },
+    exit: { x: 400, y: 100 }
+  }
+];
+
+// =============================================================================
+// GLOBAL STATE
+// =============================================================================
+const gameState = {
+  currentState: GAME_STATE.INTRO,
+  currentLevel: 0,
+  founder: null,
+  idea: null,
+  pathRecorder: null,
+  focusSystem: null,
+  platforms: null,
+  enemies: [],
+  cursors: null,
+  keys: {},
+  currentScene: null
+};
+
+// =============================================================================
+// PathRecorder
+// =============================================================================
+class PathRecorder {
+  constructor() {
+    this.path = new Array(PATH_DELAY_FRAMES);
+    this.head = 0;
+    this.frameCount = 0;
+    for (let i = 0; i < PATH_DELAY_FRAMES; i++) {
+      this.path[i] = { x: 0, y: 0 };
+    }
+  }
+
+  record(x, y) {
+    this.frameCount++;
+    if (this.frameCount % PATH_SAMPLE_RATE === 0) {
+      this.path[this.head] = { x, y };
+      this.head = (this.head + 1) % PATH_DELAY_FRAMES;
+    }
+  }
+
+  getDelayedPosition() {
+    return { ...this.path[this.head] };
+  }
+
+  reset(x, y) {
+    for (let i = 0; i < PATH_DELAY_FRAMES; i++) {
+      this.path[i] = { x, y };
+    }
+    this.head = 0;
+    this.frameCount = 0;
+  }
+}
+
+// =============================================================================
+// FocusSystem
+// =============================================================================
+class FocusSystem {
+  constructor(scene) {
+    this.scene = scene;
+    this.focus = 100;
+    this.maxFocus = 100;
+    this.isShaking = false;
+    this.createUI();
+  }
+
+  createUI() {
+    this.barBg = this.scene.add.rectangle(GAME_WIDTH / 2, 30, 300, 24, 0x333333);
+    this.bar = this.scene.add.rectangle(GAME_WIDTH / 2 - 148, 30, 296, 20, 0xff6b35);
+    this.bar.setOrigin(0, 0.5);
+    this.barBorder = this.scene.add.rectangle(GAME_WIDTH / 2, 30, 300, 24);
+    this.barBorder.setStrokeStyle(3, 0xffffff);
+    this.label = this.scene.add.text(GAME_WIDTH / 2, 30, 'FOCO', {
+      fontSize: '14px',
+      fontFamily: 'Arial',
+      color: '#ffffff',
+      fontStyle: 'bold'
+    }).setOrigin(0.5);
+  }
+
+  update(founder, idea, delta) {
+    if (!founder || !founder.sprite || !idea || !idea.sprite) return;
+
+    const dist = Phaser.Math.Distance.Between(
+      founder.sprite.x, founder.sprite.y,
+      idea.sprite.x, idea.sprite.y
+    );
+
+    if (dist > MAX_DISTANCE) {
+      this.drain(DISTANCE_DRAIN_RATE * delta / 16);
+      if (!this.isShaking) this.startShake();
+    } else if (this.isShaking) {
+      this.stopShake();
+    }
+
+    const width = (this.focus / this.maxFocus) * 296;
+    this.bar.width = width;
+
+    if (this.focus < 30) {
+      this.bar.fillColor = 0xff0000;
+    } else if (this.focus < 60) {
+      this.bar.fillColor = 0xff9900;
+    } else {
+      this.bar.fillColor = 0xff6b35;
+    }
+  }
+
+  drain(amount) {
+    this.focus = Math.max(0, this.focus - amount);
+    if (this.focus === 0 && gameState.currentState === GAME_STATE.PLAYING) {
+      changeGameState(GAME_STATE.GAMEOVER);
+    }
+  }
+
+  damage(amount) {
+    this.drain(amount);
+    this.showDamageText(amount);
+    this.flashBar();
+  }
+
+  showDamageText(amount) {
+    const txt = this.scene.add.text(GAME_WIDTH / 2, 60, `-${Math.floor(amount)}`, {
+      fontSize: '24px',
+      fontFamily: 'Arial',
+      color: '#ff0000',
+      fontStyle: 'bold'
+    }).setOrigin(0.5);
+
+    this.scene.tweens.add({
+      targets: txt,
+      y: txt.y - 40,
+      alpha: 0,
+      duration: 800,
+      onComplete: () => txt.destroy()
+    });
+  }
+
+  flashBar() {
+    this.scene.tweens.add({
+      targets: this.bar,
+      alpha: 0.3,
+      duration: 100,
+      yoyo: true,
+      repeat: 2
+    });
+  }
+
+  startShake() {
+    this.isShaking = true;
+    this.scene.cameras.main.shake(100000, 0.003, false);
+    playTone(this.scene, 440, 0.1);
+  }
+
+  stopShake() {
+    if (!this.isShaking) return;
+    this.isShaking = false;
+    this.scene.cameras.main.resetFX();
+  }
+
+  destroy() {
+    if (this.isShaking) this.stopShake();
+    if (this.barBg) this.barBg.destroy();
+    if (this.bar) this.bar.destroy();
+    if (this.barBorder) this.barBorder.destroy();
+    if (this.label) this.label.destroy();
+  }
+}
+
+// =============================================================================
+// Founder
+// =============================================================================
+class Founder {
+  constructor(scene, x, y) {
+    this.scene = scene;
+    this.sprite = scene.physics.add.sprite(x, y, null);
+    this.sprite.setSize(20, 30);
+    this.sprite.setGravityY(GRAVITY);
+    this.sprite.setCollideWorldBounds(true);
+    this.graphics = scene.add.graphics();
+
+    this.nameText = scene.add.text(x, y - 35, 'Founder', {
+      fontSize: '12px',
+      fontFamily: 'Arial',
+      color: '#ff6b35',
+      fontStyle: 'bold'
+    }).setOrigin(0.5);
+  }
+
+  update() {
+    this.draw();
+    this.nameText.setPosition(this.sprite.x, this.sprite.y - 35);
+  }
+
+  draw() {
+    this.graphics.clear();
+    const x = this.sprite.x;
+    const y = this.sprite.y;
+    this.graphics.fillStyle(0xff6b35, 1);
+    this.graphics.fillRect(x - 10, y - 15, 20, 30);
+    this.graphics.lineStyle(2, 0xffffff, 1);
+    this.graphics.strokeRect(x - 10, y - 15, 20, 30);
+  }
+
+  destroy() {
+    if (this.sprite) this.sprite.destroy();
+    if (this.graphics) this.graphics.destroy();
+    if (this.nameText) this.nameText.destroy();
+  }
+}
+
+// =============================================================================
+// Idea
+// =============================================================================
+class Idea {
+  constructor(scene, x, y, stage) {
+    this.scene = scene;
+    this.stage = stage;
+    this.sprite = scene.physics.add.sprite(x, y, null);
+    this.sprite.setSize(16, 16);
+    this.sprite.setGravityY(0);
+    this.graphics = scene.add.graphics();
+    this.particleTimer = 0;
+
+    this.nameText = scene.add.text(x, y - 30, 'Idea', {
+      fontSize: '12px',
+      fontFamily: 'Arial',
+      color: '#ffff00',
+      fontStyle: 'bold'
+    }).setOrigin(0.5);
+  }
+
+  update(delta, targetPos) {
+    const dx = targetPos.x - this.sprite.x;
+    const dy = targetPos.y - this.sprite.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    if (dist > 1) {
+      const speed = 5;
+      this.sprite.x += (dx / dist) * speed;
+      this.sprite.y += (dy / dist) * speed;
+    }
+
+    this.particleTimer += delta;
+    this.draw();
+    this.nameText.setPosition(this.sprite.x, this.sprite.y - 30);
+  }
+
+  draw() {
+    this.graphics.clear();
+    const x = this.sprite.x;
+    const y = this.sprite.y;
+
+    if (this.stage === 0) {
+      this.graphics.fillStyle(0xffff00, 1);
+      this.graphics.fillCircle(x, y, 8);
+      this.graphics.fillStyle(0xffffff, 0.7);
+      this.graphics.fillCircle(x, y, 4);
+      this.graphics.fillStyle(0xffff00, 0.2);
+      this.graphics.fillCircle(x, y, 12);
+    } else if (this.stage === 1) {
+      this.graphics.lineStyle(2, 0x00ffff, 1);
+      this.graphics.strokeRect(x - 8, y - 8, 16, 16);
+      this.graphics.strokeRect(x - 6, y - 6, 12, 12);
+      this.graphics.lineBetween(x - 8, y - 8, x - 6, y - 6);
+      this.graphics.lineBetween(x + 8, y - 8, x + 6, y - 6);
+      this.graphics.lineBetween(x - 8, y + 8, x - 6, y + 6);
+      this.graphics.lineBetween(x + 8, y + 8, x + 6, y + 6);
+    } else {
+      this.graphics.fillStyle(0xff6b35, 1);
+      this.graphics.fillRect(x - 10, y - 10, 20, 20);
+      this.graphics.lineStyle(2, 0xffffff, 1);
+      this.graphics.strokeRect(x - 10, y - 10, 20, 20);
+      this.graphics.fillStyle(0xffffff, 0.3);
+      this.graphics.fillRect(x - 8, y - 8, 6, 6);
+    }
+  }
+
+  destroy() {
+    if (this.sprite) this.sprite.destroy();
+    if (this.graphics) this.graphics.destroy();
+    if (this.nameText) this.nameText.destroy();
+  }
+}
+
+// =============================================================================
+// Enemies
+// =============================================================================
+class Enemy {
+  constructor(scene, config) {
+    this.scene = scene;
+    this.config = config;
+    this.type = config.type;
+    this.graphics = scene.add.graphics();
+  }
+  update(delta) {}
+  checkCollision(founder, idea, focusSystem) {}
+  destroy() {
+    if (this.graphics) this.graphics.destroy();
+    if (this.sprite) this.sprite.destroy();
+  }
+}
+
+class Magnet extends Enemy {
+  constructor(scene, config) {
+    super(scene, config);
+    this.x = config.x;
+    this.y = config.y;
+    this.w = config.w || 80;
+    this.h = config.h || 80;
+    this.radius = 120;
+    this.pulseTimer = 0;
+  }
+
+  update(delta) {
+    this.pulseTimer += delta;
+    this.graphics.clear();
+    this.graphics.fillStyle(0x663366, 1);
+    this.graphics.fillRect(this.x, this.y, this.w, this.h);
+    const pulse = Math.sin(this.pulseTimer * 0.003) * 0.3 + 0.7;
+    this.graphics.fillStyle(0x9966cc, 0.2 * pulse);
+    this.graphics.fillCircle(this.x + this.w/2, this.y + this.h/2, this.radius);
+  }
+
+  checkCollision(founder, idea, focusSystem) {
+    if (founder && founder.sprite && founder.sprite.body) {
+      const fdist = Phaser.Math.Distance.Between(
+        founder.sprite.x, founder.sprite.y,
+        this.x + this.w/2, this.y + this.h/2
+      );
+      if (fdist < this.radius) {
+        const dx = this.x + this.w/2 - founder.sprite.x;
+        const dy = this.y + this.h/2 - founder.sprite.y;
+        const force = Math.max(0, 1 - fdist / this.radius) * 3;
+        founder.sprite.setVelocityX(founder.sprite.body.velocity.x + dx * force);
+        founder.sprite.setVelocityY(founder.sprite.body.velocity.y + dy * force);
+      }
+    }
+  }
+}
+
+class Shadow extends Enemy {
+  constructor(scene, config) {
+    super(scene, config);
+    this.idleTimer = 0;
+    this.frozen = false;
+    this.shadow = null;
+  }
+
+  update(delta, founder) {
+    if (!founder || !founder.sprite || !founder.sprite.body) return;
+
+    const vel = founder.sprite.body.velocity;
+    if (Math.abs(vel.x) < 1 && Math.abs(vel.y) < 1) {
+      this.idleTimer += delta;
+      if (this.idleTimer > 3000 && !this.frozen) {
+        this.frozen = true;
+        founder.sprite.setVelocityX(0);
+        founder.sprite.setVelocityY(0);
+        this.shadow = this.scene.add.graphics();
+        playTone(this.scene, 200, 0.3);
+        this.scene.time.delayedCall(1000, () => {
+          this.frozen = false;
+          if (this.shadow) {
+            this.shadow.destroy();
+            this.shadow = null;
+          }
+          this.idleTimer = 0;
+        });
+      }
+    } else {
+      this.idleTimer = 0;
+      if (this.shadow) {
+        this.shadow.destroy();
+        this.shadow = null;
+      }
+    }
+
+    if (this.shadow) {
+      this.shadow.clear();
+      this.shadow.fillStyle(0x000000, 0.7);
+      this.shadow.fillCircle(founder.sprite.x, founder.sprite.y, 40);
+    }
+  }
+
+  checkCollision(founder, idea, focusSystem) {
+    if (this.frozen && founder && founder.sprite && founder.sprite.body) {
+      founder.sprite.setVelocityX(0);
+      founder.sprite.setVelocityY(0);
+    }
+  }
+
+  destroy() {
+    if (this.shadow) this.shadow.destroy();
+    if (this.graphics) this.graphics.destroy();
+  }
+}
+
+class Bug extends Enemy {
+  constructor(scene, config) {
+    super(scene, config);
+    this.sprite = scene.physics.add.sprite(config.x, config.y, null);
+    this.sprite.setSize(15, 15);
+    this.sprite.setGravityY(GRAVITY);
+    this.patrolMin = config.patrol[0];
+    this.patrolMax = config.patrol[1];
+    this.speed = 50;
+    this.direction = 1;
+  }
+
+  update(delta) {
+    if (this.sprite.x >= this.patrolMax) this.direction = -1;
+    else if (this.sprite.x <= this.patrolMin) this.direction = 1;
+    this.sprite.setVelocityX(this.speed * this.direction);
+
+    this.graphics.clear();
+    this.graphics.fillStyle(0xff0000, 1);
+    this.graphics.fillCircle(this.sprite.x, this.sprite.y, 8);
+    this.graphics.lineStyle(2, 0xffff00, 1);
+    this.graphics.strokeCircle(this.sprite.x, this.sprite.y, 10);
+  }
+
+  checkCollision(founder, idea, focusSystem) {
+    if (!focusSystem) return;
+    if (founder && founder.sprite) {
+      const fdist = Phaser.Math.Distance.Between(founder.sprite.x, founder.sprite.y, this.sprite.x, this.sprite.y);
+      if (fdist < 20) {
+        focusSystem.damage(10);
+        playTone(this.scene, 150, 0.1);
+      }
+    }
+  }
+}
+
+class Eye extends Enemy {
+  constructor(scene, config) {
+    super(scene, config);
+    this.x = config.x;
+    this.y = config.y;
+    this.angle = 0;
+    this.rotSpeed = config.rotSpeed || 1;
+    this.range = 150;
+    this.freezeTimer = 0;
+  }
+
+  update(delta) {
+    this.angle += this.rotSpeed * delta * 0.001;
+    if (this.freezeTimer > 0) this.freezeTimer -= delta;
+
+    this.graphics.clear();
+    this.graphics.fillStyle(0x666666, 1);
+    this.graphics.fillCircle(this.x, this.y, 15);
+    this.graphics.fillStyle(0xff0000, 1);
+    const px = this.x + Math.cos(this.angle) * 5;
+    const py = this.y + Math.sin(this.angle) * 5;
+    this.graphics.fillCircle(px, py, 5);
+    this.graphics.lineStyle(2, this.freezeTimer > 0 ? 0xff0000 : 0x00ffff, 0.5);
+    this.graphics.lineBetween(this.x, this.y, this.x + Math.cos(this.angle) * this.range, this.y + Math.sin(this.angle) * this.range);
+  }
+
+  checkCollision(founder, idea, focusSystem) {
+    if (!founder || !founder.sprite || !founder.sprite.body) return;
+    if (this.freezeTimer > 0) {
+      founder.sprite.setVelocityX(0);
+      founder.sprite.setVelocityY(0);
+      return;
+    }
+    const fx = founder.sprite.x - this.x;
+    const fy = founder.sprite.y - this.y;
+    const fdist = Math.sqrt(fx*fx + fy*fy);
+    const fangle = Math.atan2(fy, fx);
+    const angleDiff = Math.abs(((fangle - this.angle + Math.PI) % (2*Math.PI)) - Math.PI);
+    if (fdist < this.range && angleDiff < 0.2) {
+      this.freezeTimer = 3000;
+      playTone(this.scene, 800, 0.2);
+    }
+  }
+}
+
+class Cannon extends Enemy {
+  constructor(scene, config) {
+    super(scene, config);
+    this.x = config.x;
+    this.y = config.y;
+    this.fireTimer = 0;
+    this.fireRate = 2000;
+    this.projectiles = [];
+  }
+
+  update(delta, idea) {
+    this.fireTimer += delta;
+    if (this.fireTimer >= this.fireRate && idea && idea.sprite) {
+      const dx = idea.sprite.x - this.x;
+      const dy = idea.sprite.y - this.y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      this.projectiles.push({
+        x: this.x,
+        y: this.y,
+        vx: (dx / dist) * 3,
+        vy: (dy / dist) * 3
+      });
+      playTone(this.scene, 300, 0.1);
+      this.fireTimer = 0;
+    }
+
+    this.projectiles = this.projectiles.filter(p => {
+      p.x += p.vx * delta * 0.06;
+      p.y += p.vy * delta * 0.06;
+      return p.x > 0 && p.x < GAME_WIDTH && p.y > 0 && p.y < GAME_HEIGHT;
+    });
+
+    this.graphics.clear();
+    this.graphics.fillStyle(0x444444, 1);
+    this.graphics.fillRect(this.x - 10, this.y - 5, 20, 10);
+    this.graphics.fillStyle(0xff0000, 1);
+    this.projectiles.forEach(p => this.graphics.fillCircle(p.x, p.y, 5));
+  }
+
+  checkCollision(founder, idea, focusSystem) {
+    if (!focusSystem) return;
+    this.projectiles.forEach(p => {
+      if (idea && idea.sprite) {
+        const idist = Phaser.Math.Distance.Between(idea.sprite.x, idea.sprite.y, p.x, p.y);
+        if (idist < 15) {
+          focusSystem.damage(15);
+          playTone(this.scene, 200, 0.2);
+          p.x = -1000;
+        }
+      }
     });
   }
 }
 
+class Bubble extends Enemy {
+  constructor(scene, config) {
+    super(scene, config);
+    this.sprite = scene.physics.add.sprite(config.x, config.y, null);
+    this.sprite.setSize(20, 20);
+    this.sprite.setGravityY(0);
+    this.sprite.setBounce(1, 1);
+    this.sprite.setCollideWorldBounds(true);
+    this.bouncing = config.bouncing !== undefined ? config.bouncing : true;
+    if (this.bouncing) {
+      const angle = Math.random() * Math.PI * 2;
+      this.sprite.setVelocity(Math.cos(angle) * 80, Math.sin(angle) * 80);
+    }
+  }
+
+  update(delta, idea) {
+    this.graphics.clear();
+    this.graphics.lineStyle(3, 0x888888, 1);
+    this.graphics.strokeCircle(this.sprite.x, this.sprite.y, 12);
+    this.graphics.fillStyle(0xcccccc, 0.3);
+    this.graphics.fillCircle(this.sprite.x, this.sprite.y, 12);
+    this.graphics.fillStyle(0xffffff, 0.6);
+    this.graphics.fillCircle(this.sprite.x - 4, this.sprite.y - 4, 3);
+  }
+
+  checkCollision(founder, idea, focusSystem) {
+    if (founder && founder.sprite && founder.sprite.body) {
+      const fdist = Phaser.Math.Distance.Between(founder.sprite.x, founder.sprite.y, this.sprite.x, this.sprite.y);
+      if (fdist < 25) {
+        const dx = founder.sprite.x - this.sprite.x;
+        const dy = founder.sprite.y - this.sprite.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist > 0) founder.sprite.setVelocityX(founder.sprite.body.velocity.x + (dx/dist) * 100);
+      }
+    }
+    if (idea && idea.sprite && focusSystem) {
+      const idist = Phaser.Math.Distance.Between(idea.sprite.x, idea.sprite.y, this.sprite.x, this.sprite.y);
+      if (idist < 25) {
+        focusSystem.damage(8);
+        playTone(this.scene, 250, 0.1);
+      }
+    }
+  }
+}
+
+function createEnemy(scene, config) {
+  switch (config.type) {
+    case 'magnet': return new Magnet(scene, config);
+    case 'shadow': return new Shadow(scene, config);
+    case 'bug': return new Bug(scene, config);
+    case 'eye': return new Eye(scene, config);
+    case 'cannon': return new Cannon(scene, config);
+    case 'bubble': return new Bubble(scene, config);
+    default: return null;
+  }
+}
+
+// =============================================================================
+// STATE MANAGEMENT
+// =============================================================================
+function changeGameState(newState) {
+  gameState.currentState = newState;
+  if (newState === GAME_STATE.GAMEOVER) {
+    showGameOver(gameState.currentScene);
+  } else if (newState === GAME_STATE.LEVEL_COMPLETE) {
+    handleLevelComplete(gameState.currentScene);
+  } else if (newState === GAME_STATE.ENDING) {
+    showEnding(gameState.currentScene);
+  }
+}
+
+// =============================================================================
+// PHASER
+// =============================================================================
 const config = {
   type: Phaser.AUTO,
-  width: 800,
-  height: 600,
+  width: GAME_WIDTH,
+  height: GAME_HEIGHT,
   backgroundColor: '#000000',
+  physics: {
+    default: 'arcade',
+    arcade: {
+      gravity: { y: 0 },
+      debug: false
+    }
+  },
   scene: {
+    preload: preload,
     create: create,
     update: update
   }
@@ -87,350 +796,297 @@ const config = {
 
 const game = new Phaser.Game(config);
 
-// Game variables
-let snake = [];
-let snakeSize = 15;
-let direction = { x: 1, y: 0 };
-let nextDirection = { x: 1, y: 0 };
-let food;
-let score = 0;
-let scoreText;
-let titleBlocks = [];
-let gameOver = false;
-let moveTimer = 0;
-let moveDelay = 100;  // Faster initial speed (was 150ms)
-let graphics;
-
-// Pixel font patterns (5x5 grid for each letter)
-const letters = {
-  P: [[1,1,1,1],[1,0,0,1],[1,1,1,1],[1,0,0,0],[1,0,0,0]],
-  L: [[1,0,0,0],[1,0,0,0],[1,0,0,0],[1,0,0,0],[1,1,1,1]],
-  A: [[0,1,1,0],[1,0,0,1],[1,1,1,1],[1,0,0,1],[1,0,0,1]],
-  T: [[1,1,1,1],[0,1,0,0],[0,1,0,0],[0,1,0,0],[0,1,0,0]],
-  N: [[1,0,0,1],[1,1,0,1],[1,0,1,1],[1,0,0,1],[1,0,0,1]],
-  U: [[1,0,0,1],[1,0,0,1],[1,0,0,1],[1,0,0,1],[1,1,1,1]],
-  S: [[0,1,1,1],[1,0,0,0],[0,1,1,0],[0,0,0,1],[1,1,1,0]],
-  H: [[1,0,0,1],[1,0,0,1],[1,1,1,1],[1,0,0,1],[1,0,0,1]],
-  C: [[0,1,1,1],[1,0,0,0],[1,0,0,0],[1,0,0,0],[0,1,1,1]],
-  K: [[1,0,0,1],[1,0,1,0],[1,1,0,0],[1,0,1,0],[1,0,0,1]],
-  '2': [[1,1,1,0],[0,0,0,1],[0,1,1,0],[1,0,0,0],[1,1,1,1]],
-  '5': [[1,1,1,1],[1,0,0,0],[1,1,1,0],[0,0,0,1],[1,1,1,0]],
-  ':': [[0,0,0,0],[0,1,0,0],[0,0,0,0],[0,1,0,0],[0,0,0,0]],
-  R: [[1,1,1,0],[1,0,0,1],[1,1,1,0],[1,0,1,0],[1,0,0,1]],
-  D: [[1,1,1,0],[1,0,0,1],[1,0,0,1],[1,0,0,1],[1,1,1,0]],
-  E: [[1,1,1,1],[1,0,0,0],[1,1,1,0],[1,0,0,0],[1,1,1,1]]
-};
-
-// Bold font for ARCADE (filled/solid style)
-const boldLetters = {
-  A: [[1,1,1,1,1],[1,1,0,1,1],[1,1,1,1,1],[1,1,0,1,1],[1,1,0,1,1]],
-  R: [[1,1,1,1,0],[1,1,0,1,1],[1,1,1,1,0],[1,1,0,1,1],[1,1,0,1,1]],
-  C: [[1,1,1,1,1],[1,1,0,0,0],[1,1,0,0,0],[1,1,0,0,0],[1,1,1,1,1]],
-  D: [[1,1,1,1,0],[1,1,0,1,1],[1,1,0,1,1],[1,1,0,1,1],[1,1,1,1,0]],
-  E: [[1,1,1,1,1],[1,1,0,0,0],[1,1,1,1,0],[1,1,0,0,0],[1,1,1,1,1]]
-};
+function preload() {}
 
 function create() {
-  const scene = this;
-  graphics = this.add.graphics();
+  gameState.currentScene = this;
+  showIntroScreen(this);
+}
 
-  // Build "PLATANUS HACK ARCADE" in cyan - centered and grid-aligned
-  // PLATANUS: 8 letters × (4 cols + 1 spacing) = 40 blocks, but last letter no spacing = 39 blocks × 15px = 585px
-  let x = Math.floor((800 - 585) / 2 / snakeSize) * snakeSize;
-  let y = Math.floor(180 / snakeSize) * snakeSize;
-  'PLATANUS'.split('').forEach(char => {
-    x = drawLetter(char, x, y, 0x00ffff);
+function update(time, delta) {
+  if (gameState.currentState !== GAME_STATE.PLAYING) return;
+  if (!gameState.founder || !gameState.founder.sprite || !gameState.founder.sprite.body) return;
+  if (!gameState.idea || !gameState.idea.sprite) return;
+  if (!gameState.pathRecorder || !gameState.focusSystem) return;
+
+  gameState.pathRecorder.record(gameState.founder.sprite.x, gameState.founder.sprite.y);
+  const targetPos = gameState.pathRecorder.getDelayedPosition();
+  gameState.idea.update(delta, targetPos);
+  gameState.focusSystem.update(gameState.founder, gameState.idea, delta);
+  gameState.founder.update();
+
+  gameState.enemies.forEach(enemy => {
+    if (enemy.type === 'shadow') enemy.update(delta, gameState.founder);
+    else if (enemy.type === 'cannon') enemy.update(delta, gameState.idea);
+    else if (enemy.type === 'bubble') enemy.update(delta, gameState.idea);
+    else enemy.update(delta);
+    enemy.checkCollision(gameState.founder, gameState.idea, gameState.focusSystem);
   });
 
-  // HACK: 4 letters × (4 cols + 1 spacing) = 20 blocks, but last letter no spacing = 19 blocks × 15px = 285px
-  x = Math.floor((800 - 285) / 2 / snakeSize) * snakeSize;
-  y = Math.floor(280 / snakeSize) * snakeSize;
-  'HACK'.split('').forEach(char => {
-    x = drawLetter(char, x, y, 0x00ffff);
-  });
+  handleInput(this, delta);
+  checkLevelComplete(this);
+}
 
-  // ARCADE: 6 letters × (5 cols + 1 spacing) = 36 blocks, but last letter no spacing = 35 blocks × 15px = 525px
-  x = Math.floor((800 - 525) / 2 / snakeSize) * snakeSize;
-  y = Math.floor(380 / snakeSize) * snakeSize;
-  'ARCADE'.split('').forEach(char => {
-    x = drawLetter(char, x, y, 0xff00ff, true);
-  });
+// =============================================================================
+// GAME FUNCTIONS
+// =============================================================================
+function showIntroScreen(scene) {
+  gameState.currentState = GAME_STATE.INTRO;
 
-  // Score display
-  scoreText = this.add.text(16, 16, 'Score: 0', {
-    fontSize: '24px',
-    fontFamily: 'Arial, sans-serif',
-    color: '#00ff00'
-  });
-
-  // Instructions
-  this.add.text(400, 560, 'Use Joystick to Move | Avoid Walls, Yourself & The Title!', {
-    fontSize: '16px',
-    fontFamily: 'Arial, sans-serif',
-    color: '#888888',
-    align: 'center'
+  const overlay = scene.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x000000);
+  const title = scene.add.text(GAME_WIDTH / 2, 200, TEXTS.intro.title, {
+    fontSize: '64px', fontFamily: 'Arial', color: '#ff6b35', fontStyle: 'bold'
+  }).setOrigin(0.5);
+  const subtitle = scene.add.text(GAME_WIDTH / 2, 300, TEXTS.intro.subtitle, {
+    fontSize: '24px', fontFamily: 'Arial', color: '#ffffff', align: 'center'
+  }).setOrigin(0.5);
+  const startText = scene.add.text(GAME_WIDTH / 2, 450, TEXTS.intro.start, {
+    fontSize: '20px', fontFamily: 'Arial', color: '#ffff00'
   }).setOrigin(0.5);
 
-  // Initialize snake (start top left)
-  snake = [
-    { x: 75, y: 60 },
-    { x: 60, y: 60 },
-    { x: 45, y: 60 }
-  ];
-
-  // Spawn initial food
-  spawnFood();
-
-  // Keyboard and Arcade Button input
-  this.input.keyboard.on('keydown', (event) => {
-    // Normalize keyboard input to arcade codes for easier testing
-    const key = KEYBOARD_TO_ARCADE[event.key] || event.key;
-
-    // Restart game (arcade buttons only)
-    if (gameOver && (key === 'P1A' || key === 'START1')) {
-      restartGame(scene);
-      return;
-    }
-
-    // Direction controls (keyboard keys get mapped to arcade codes)
-    if (key === 'P1U' && direction.y === 0) {
-      nextDirection = { x: 0, y: -1 };
-    } else if (key === 'P1D' && direction.y === 0) {
-      nextDirection = { x: 0, y: 1 };
-    } else if (key === 'P1L' && direction.x === 0) {
-      nextDirection = { x: -1, y: 0 };
-    } else if (key === 'P1R' && direction.x === 0) {
-      nextDirection = { x: 1, y: 0 };
-    }
-  });
-
-  playTone(this, 440, 0.1);
-}
-
-function drawLetter(char, startX, startY, color, useBold = false) {
-  const pattern = useBold ? boldLetters[char] : letters[char];
-  if (!pattern) return startX + 30;
-
-  for (let row = 0; row < pattern.length; row++) {
-    for (let col = 0; col < pattern[row].length; col++) {
-      if (pattern[row][col]) {
-        const blockX = startX + col * snakeSize;
-        const blockY = startY + row * snakeSize;
-        titleBlocks.push({ x: blockX, y: blockY, color: color });
-      }
-    }
-  }
-  return startX + (pattern[0].length + 1) * snakeSize;
-}
-
-function update(_time, delta) {
-  if (gameOver) return;
-
-  moveTimer += delta;
-  if (moveTimer >= moveDelay) {
-    moveTimer = 0;
-    direction = nextDirection;
-    moveSnake(this);
-  }
-
-  drawGame();
-}
-
-function moveSnake(scene) {
-  const head = snake[0];
-  const newHead = {
-    x: head.x + direction.x * snakeSize,
-    y: head.y + direction.y * snakeSize
-  };
-
-  // Check wall collision
-  if (newHead.x < 0 || newHead.x >= 800 || newHead.y < 0 || newHead.y >= 600) {
-    endGame(scene);
-    return;
-  }
-
-  // Check self collision
-  for (let segment of snake) {
-    if (segment.x === newHead.x && segment.y === newHead.y) {
-      endGame(scene);
-      return;
-    }
-  }
-
-  // Check title block collision
-  for (let block of titleBlocks) {
-    if (newHead.x === block.x && newHead.y === block.y) {
-      endGame(scene);
-      return;
-    }
-  }
-
-  snake.unshift(newHead);
-
-  // Check food collision
-  if (newHead.x === food.x && newHead.y === food.y) {
-    score += 10;
-    scoreText.setText('Score: ' + score);
-    spawnFood();
-    playTone(scene, 880, 0.1);
-
-    if (moveDelay > 50) {  // Faster max speed (was 80ms)
-      moveDelay -= 2;
-    }
-  } else {
-    snake.pop();
-  }
-}
-
-function spawnFood() {
-  let valid = false;
-  let attempts = 0;
-
-  while (!valid && attempts < 100) {
-    attempts++;
-    const gridX = Math.floor(Math.random() * 53) * snakeSize;
-    const gridY = Math.floor(Math.random() * 40) * snakeSize;
-
-    // Check not on snake
-    let onSnake = false;
-    for (let segment of snake) {
-      if (segment.x === gridX && segment.y === gridY) {
-        onSnake = true;
-        break;
-      }
-    }
-
-    // Check not on title blocks
-    let onTitle = false;
-    for (let block of titleBlocks) {
-      if (gridX === block.x && gridY === block.y) {
-        onTitle = true;
-        break;
-      }
-    }
-
-    if (!onSnake && !onTitle) {
-      food = { x: gridX, y: gridY };
-      valid = true;
-    }
-  }
-}
-
-function drawGame() {
-  graphics.clear();
-
-  // Draw title blocks
-  titleBlocks.forEach(block => {
-    graphics.fillStyle(block.color, 1);
-    graphics.fillRect(block.x, block.y, snakeSize - 2, snakeSize - 2);
-  });
-
-  // Draw snake
-  snake.forEach((segment, index) => {
-    if (index === 0) {
-      graphics.fillStyle(0x00ff00, 1);
-    } else {
-      graphics.fillStyle(0x00aa00, 1);
-    }
-    graphics.fillRect(segment.x, segment.y, snakeSize - 2, snakeSize - 2);
-  });
-
-  // Draw food
-  graphics.fillStyle(0xff0000, 1);
-  graphics.fillRect(food.x, food.y, snakeSize - 2, snakeSize - 2);
-}
-
-function endGame(scene) {
-  gameOver = true;
-  playTone(scene, 220, 0.5);
-
-  // Semi-transparent overlay
-  const overlay = scene.add.graphics();
-  overlay.fillStyle(0x000000, 0.7);
-  overlay.fillRect(0, 0, 800, 600);
-
-  // Game Over title with glow effect
-  const gameOverText = scene.add.text(400, 300, 'GAME OVER', {
-    fontSize: '64px',
-    fontFamily: 'Arial, sans-serif',
-    color: '#ff0000',
-    align: 'center',
-    stroke: '#ff6666',
-    strokeThickness: 8
-  }).setOrigin(0.5);
-
-  // Pulsing animation for game over text
   scene.tweens.add({
-    targets: gameOverText,
-    scale: { from: 1, to: 1.1 },
-    alpha: { from: 1, to: 0.8 },
-    duration: 800,
-    yoyo: true,
-    repeat: -1,
-    ease: 'Sine.easeInOut'
-  });
-
-  // Score display
-  scene.add.text(400, 400, 'SCORE: ' + score, {
-    fontSize: '36px',
-    fontFamily: 'Arial, sans-serif',
-    color: '#00ffff',
-    align: 'center',
-    stroke: '#000000',
-    strokeThickness: 4
-  }).setOrigin(0.5);
-
-  // Restart instruction with subtle animation
-  const restartText = scene.add.text(400, 480, 'Press Button A or START to Restart', {
-    fontSize: '24px',
-    fontFamily: 'Arial, sans-serif',
-    color: '#ffff00',
-    align: 'center',
-    stroke: '#000000',
-    strokeThickness: 3
-  }).setOrigin(0.5);
-
-  // Blinking animation for restart text
-  scene.tweens.add({
-    targets: restartText,
-    alpha: { from: 1, to: 0.3 },
+    targets: startText,
+    alpha: 0.3,
     duration: 600,
     yoyo: true,
-    repeat: -1,
-    ease: 'Sine.easeInOut'
+    repeat: -1
+  });
+
+  scene.input.keyboard.once('keydown', () => {
+    overlay.destroy();
+    title.destroy();
+    subtitle.destroy();
+    startText.destroy();
+    startLevel(scene, 0);
   });
 }
 
-function restartGame(scene) {
-  snake = [
-    { x: 75, y: 60 },
-    { x: 60, y: 60 },
-    { x: 45, y: 60 }
-  ];
-  direction = { x: 1, y: 0 };
-  nextDirection = { x: 1, y: 0 };
-  score = 0;
-  gameOver = false;
-  moveDelay = 100;  // Match new faster initial speed
-  scoreText.setText('Score: 0');
-  spawnFood();
-  scene.scene.restart();
+function startLevel(scene, levelIndex) {
+  cleanupLevel(scene);
+
+  gameState.currentLevel = levelIndex;
+  const level = LEVELS[levelIndex];
+  scene.cameras.main.setBackgroundColor(level.bg);
+
+  gameState.currentState = GAME_STATE.LEVEL_INTRO;
+  showLevelIntro(scene, levelIndex, () => {
+    gameState.currentState = GAME_STATE.PLAYING;
+
+    gameState.platforms = scene.physics.add.staticGroup();
+    level.platforms.forEach(p => {
+      const platform = scene.add.rectangle(p.x + p.w / 2, p.y + p.h / 2, p.w, p.h, 0x666666);
+      platform.setStrokeStyle(2, 0x888888);
+      scene.physics.add.existing(platform, true);
+      gameState.platforms.add(platform);
+    });
+
+    gameState.founder = new Founder(scene, level.start.x, level.start.y);
+    gameState.idea = new Idea(scene, level.start.x, level.start.y, level.ideaStage);
+    gameState.pathRecorder = new PathRecorder();
+    gameState.pathRecorder.reset(level.start.x, level.start.y);
+    gameState.focusSystem = new FocusSystem(scene);
+
+    scene.physics.add.collider(gameState.founder.sprite, gameState.platforms);
+    scene.cameras.main.startFollow(gameState.founder.sprite);
+    scene.cameras.main.setBounds(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+    gameState.cursors = scene.input.keyboard.createCursorKeys();
+    gameState.keys = {
+      w: scene.input.keyboard.addKey('W'),
+      a: scene.input.keyboard.addKey('A'),
+      s: scene.input.keyboard.addKey('S'),
+      d: scene.input.keyboard.addKey('D'),
+      space: scene.input.keyboard.addKey('SPACE'),
+      u: scene.input.keyboard.addKey('U')
+    };
+
+    level.enemies.forEach(eConfig => {
+      const enemy = createEnemy(scene, eConfig);
+      if (enemy) {
+        gameState.enemies.push(enemy);
+        if (enemy.sprite) scene.physics.add.collider(enemy.sprite, gameState.platforms);
+      }
+    });
+
+    const exitCircle = scene.add.circle(level.exit.x, level.exit.y, 50, 0x00ff00, 0.3);
+    const exitBorder = scene.add.circle(level.exit.x, level.exit.y, 50);
+    exitBorder.setStrokeStyle(3, 0x00ff00);
+    scene.tweens.add({
+      targets: [exitCircle, exitBorder],
+      scale: { from: 1, to: 1.2 },
+      alpha: { from: 0.5, to: 0.8 },
+      duration: 1000,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut'
+    });
+
+    playTone(scene, 440, 0.1);
+  });
+}
+
+function cleanupLevel(scene) {
+  scene.cameras.main.stopFollow();
+  scene.cameras.main.resetFX();
+  scene.tweens.killAll();
+  scene.time.removeAllEvents();
+
+  if (gameState.focusSystem) {
+    gameState.focusSystem.destroy();
+    gameState.focusSystem = null;
+  }
+  if (gameState.idea) {
+    gameState.idea.destroy();
+    gameState.idea = null;
+  }
+  if (gameState.founder) {
+    gameState.founder.destroy();
+    gameState.founder = null;
+  }
+  if (gameState.platforms) {
+    gameState.platforms.clear(true, true);
+    gameState.platforms = null;
+  }
+  gameState.enemies.forEach(e => { if (e && e.destroy) e.destroy(); });
+  gameState.enemies = [];
+  gameState.pathRecorder = null;
+}
+
+function showLevelIntro(scene, levelIndex, callback) {
+  const levelData = TEXTS.levels[levelIndex];
+  const overlay = scene.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x000000, 0.9);
+  const day = scene.add.text(GAME_WIDTH / 2, 200, levelData.day, {
+    fontSize: '48px', fontFamily: 'Arial', color: '#ff6b35', fontStyle: 'bold'
+  }).setOrigin(0.5);
+  const text = scene.add.text(GAME_WIDTH / 2, 300, levelData.text, {
+    fontSize: '24px', fontFamily: 'Arial', color: '#ffffff', align: 'center'
+  }).setOrigin(0.5);
+
+  scene.time.delayedCall(3000, () => {
+    overlay.destroy();
+    day.destroy();
+    text.destroy();
+    callback();
+  });
+}
+
+function handleInput(scene, delta) {
+  if (!gameState.founder || !gameState.founder.sprite || !gameState.founder.sprite.body) return;
+
+  const founder = gameState.founder.sprite;
+  let moveLeft = false, moveRight = false, jump = false;
+
+  const keysPressed = scene.input.keyboard.keys;
+  for (const key in keysPressed) {
+    if (keysPressed[key].isDown) {
+      const arcadeCode = KEYBOARD_TO_ARCADE[keysPressed[key].originalEvent?.key];
+      if (arcadeCode === 'P1L') moveLeft = true;
+      if (arcadeCode === 'P1R') moveRight = true;
+      if (arcadeCode === 'P1U' || arcadeCode === 'P1A') jump = true;
+    }
+  }
+
+  if (gameState.keys.a.isDown || gameState.cursors.left.isDown) moveLeft = true;
+  if (gameState.keys.d.isDown || gameState.cursors.right.isDown) moveRight = true;
+  if (gameState.keys.w.isDown || gameState.keys.space.isDown || gameState.cursors.up.isDown || gameState.keys.u.isDown) jump = true;
+
+  if (moveLeft) founder.setVelocityX(-PLAYER_SPEED);
+  else if (moveRight) founder.setVelocityX(PLAYER_SPEED);
+  else founder.setVelocityX(0);
+
+  if (jump && founder.body.touching.down) {
+    founder.setVelocityY(JUMP_VELOCITY);
+    playTone(scene, 330, 0.1);
+  }
+}
+
+function checkLevelComplete(scene) {
+  if (!gameState.founder || !gameState.founder.sprite) return;
+  const level = LEVELS[gameState.currentLevel];
+  const dist = Phaser.Math.Distance.Between(
+    gameState.founder.sprite.x,
+    gameState.founder.sprite.y,
+    level.exit.x,
+    level.exit.y
+  );
+  if (dist < 50) changeGameState(GAME_STATE.LEVEL_COMPLETE);
+}
+
+function handleLevelComplete(scene) {
+  if (gameState.focusSystem && gameState.focusSystem.isShaking) {
+    gameState.focusSystem.stopShake();
+  }
+  playTone(scene, 880, 0.3);
+  scene.time.delayedCall(500, () => {
+    if (gameState.currentLevel < LEVELS.length - 1) {
+      startLevel(scene, gameState.currentLevel + 1);
+    } else {
+      changeGameState(GAME_STATE.ENDING);
+    }
+  });
+}
+
+function showGameOver(scene) {
+  const overlay = scene.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x000000, 0.85);
+  overlay.setDepth(1000).setScrollFactor(0);
+
+  const title = scene.add.text(GAME_WIDTH / 2, 250, 'BURNOUT', {
+    fontSize: '64px', fontFamily: 'Arial', color: '#ff0000', fontStyle: 'bold'
+  }).setOrigin(0.5).setDepth(1001).setScrollFactor(0);
+
+  const subtitle = scene.add.text(GAME_WIDTH / 2, 350, 'Tu Idea se perdió en la oscuridad', {
+    fontSize: '24px', fontFamily: 'Arial', color: '#ffffff'
+  }).setOrigin(0.5).setDepth(1001).setScrollFactor(0);
+
+  const restart = scene.add.text(GAME_WIDTH / 2, 450, '[Presiona para reintentar]', {
+    fontSize: '20px', fontFamily: 'Arial', color: '#ffff00'
+  }).setOrigin(0.5).setDepth(1001).setScrollFactor(0);
+
+  playTone(scene, 220, 0.5);
+
+  scene.input.keyboard.once('keydown', () => {
+    overlay.destroy();
+    title.destroy();
+    subtitle.destroy();
+    restart.destroy();
+    startLevel(scene, 0);
+  });
+}
+
+function showEnding(scene) {
+  cleanupLevel(scene);
+  scene.cameras.main.setBackgroundColor(0x000000);
+
+  let y = 150;
+  TEXTS.ending.forEach((line, i) => {
+    scene.time.delayedCall(i * 1000, () => {
+      const text = scene.add.text(GAME_WIDTH / 2, y, line, {
+        fontSize: line.length < 20 ? '32px' : '24px',
+        fontFamily: 'Arial',
+        color: line.includes('PLATANUS') ? '#ff6b35' : '#ffffff',
+        align: 'center',
+        fontStyle: line.includes('PLATANUS') ? 'bold' : 'normal'
+      }).setOrigin(0.5).setAlpha(0);
+      scene.tweens.add({ targets: text, alpha: 1, duration: 500 });
+      if (line !== '') y += 40;
+    });
+  });
+
+  playTone(scene, 440, 0.2);
+  scene.time.delayedCall(500, () => playTone(scene, 554, 0.2));
+  scene.time.delayedCall(1000, () => playTone(scene, 659, 0.3));
 }
 
 function playTone(scene, frequency, duration) {
   const audioContext = scene.sound.context;
   const oscillator = audioContext.createOscillator();
   const gainNode = audioContext.createGain();
-
   oscillator.connect(gainNode);
   gainNode.connect(audioContext.destination);
-
   oscillator.frequency.value = frequency;
   oscillator.type = 'square';
-
   gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
   gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
-
   oscillator.start(audioContext.currentTime);
   oscillator.stop(audioContext.currentTime + duration);
 }
