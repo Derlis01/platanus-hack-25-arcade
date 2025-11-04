@@ -16,7 +16,10 @@ function update(time, delta) {
 
   gameState.pathRecorder.record(gameState.founder.sprite.x, gameState.founder.sprite.y);
   const targetPos = gameState.pathRecorder.getDelayedPosition();
-  
+
+  // Actualizar portal animado
+  if (gameState.exitPortal) gameState.exitPortal.update(delta);
+
   // Primero los enemigos aplican sus fuerzas externas a la idea
   gameState.enemies.forEach(enemy => {
     if (enemy.type === 'shadow') enemy.update(delta, gameState.founder);
@@ -25,7 +28,7 @@ function update(time, delta) {
     else enemy.update(delta);
     enemy.checkCollision(gameState.founder, gameState.idea, gameState.focusSystem);
   });
-  
+
   // Luego la idea se actualiza, aplicando las fuerzas externas acumuladas
   gameState.idea.update(delta, targetPos);
   gameState.focusSystem.update(gameState.founder, gameState.idea, delta);
@@ -131,34 +134,57 @@ function startLevel(scene, levelIndex) {
       }).setScrollFactor(0).setDepth(1000);
     }
 
-    gameState.exitCircle = scene.add.circle(level.exit.x, level.exit.y, 50, 0x00ff00, 0.3);
-    gameState.exitBorder = scene.add.circle(level.exit.x, level.exit.y, 50);
-    gameState.exitBorder.setStrokeStyle(3, 0x00ff00);
+    // Portal minimalista estilo Apple
+    gameState.exitPortal = {
+      x: level.exit.x,
+      y: level.exit.y,
+      time: 0,
+      graphics: scene.add.graphics(),
+      update: function(delta) {
+        this.time += delta;
+        this.graphics.clear();
 
-    // Agregar nombre a la meta según el nivel
-    const exitNames = {
-      0: 'Lanza tu Idea',
-      1: 'Comercializa',
-      2: 'Impacta Mundo'
+        const t = (this.time % 2400) / 2400; // Ciclo más lento y elegante
+        const breathe = 1 + Math.sin(t * Math.PI * 2) * 0.08; // Respiración sutil
+
+        // Anillo exterior delgado (muy sutil)
+        const outerRadius = 45;
+        this.graphics.lineStyle(1.5, 0xffffff, 0.15 + Math.sin(t * Math.PI * 2) * 0.05);
+        this.graphics.strokeCircle(this.x, this.y, outerRadius * breathe);
+
+        // Anillo principal (elegante y delgado)
+        const mainRadius = 32;
+        const alpha = 0.3 + Math.sin(t * Math.PI * 2) * 0.1;
+        this.graphics.lineStyle(2, 0xffffff, alpha);
+        this.graphics.strokeCircle(this.x, this.y, mainRadius);
+
+        // Centro minimalista - punto sólido
+        this.graphics.fillStyle(0xffffff, 0.9);
+        this.graphics.fillCircle(this.x, this.y, 4 * breathe);
+
+        // Highlight sutil (pequeño punto de brillo)
+        this.graphics.fillStyle(0xffffff, 0.4 + Math.sin(t * Math.PI * 4) * 0.2);
+        this.graphics.fillCircle(this.x - 1, this.y - 1, 2);
+      },
+      destroy: function() {
+        this.graphics.destroy();
+      }
     };
-    const exitText = scene.add.text(level.exit.x, level.exit.y - 70, exitNames[levelIndex] || 'Objetivo', {
-      fontSize: '12px',
-      fill: '#00ff00',
-      fontFamily: 'monospace',
-      fontStyle: 'bold',
-      backgroundColor: '#000000',
-      padding: { x: 5, y: 3 }
+
+    // Texto minimalista debajo del portal
+    const exitNames = {
+      0: 'Lanzar',
+      1: 'Comercializar',
+      2: 'Impactar'
+    };
+    const exitText = scene.add.text(level.exit.x, level.exit.y + 55, exitNames[levelIndex] || 'Meta', {
+      fontSize: '11px',
+      fill: '#ffffff',
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      fontStyle: 'normal',
+      alpha: 0.6
     }).setOrigin(0.5);
     gameState.exitText = exitText;
-    scene.tweens.add({
-      targets: [gameState.exitCircle, gameState.exitBorder],
-      scale: { from: 1, to: 1.2 },
-      alpha: { from: 0.5, to: 0.8 },
-      duration: 1000,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Sine.easeInOut'
-    });
 
     playTone(scene, 440, 0.1);
   });
@@ -170,13 +196,9 @@ function cleanupLevel(scene) {
   scene.tweens.killAll();
   scene.time.removeAllEvents();
 
-  if (gameState.exitCircle) {
-    gameState.exitCircle.destroy();
-    gameState.exitCircle = null;
-  }
-  if (gameState.exitBorder) {
-    gameState.exitBorder.destroy();
-    gameState.exitBorder = null;
+  if (gameState.exitPortal) {
+    gameState.exitPortal.destroy();
+    gameState.exitPortal = null;
   }
   if (gameState.exitText) {
     gameState.exitText.destroy();

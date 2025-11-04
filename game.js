@@ -8,7 +8,7 @@ const PLAYER_SPEED = 180;
 const JUMP_VELOCITY = -400;
 const PATH_SAMPLE_RATE = 3;
 const PATH_DELAY_FRAMES = 10;
-const MAX_DISTANCE = 100;
+const MAX_DISTANCE = 130;
 const DISTANCE_DRAIN_RATE = 1.7;
 
 const GAME_STATE = {
@@ -143,10 +143,7 @@ const LEVEL_0_GARAGE = {
 
     // Sofá #2: "Distracción" - En la zona 3, crea peligro en la subida rápida
     // Requiere planificación de ruta
-    { type: 'magnet', x: 600, y: 270, w: 55, h: 50, name: 'Distracciones' },
-
-    // Síndrome del Impostor: Acecha en segundo plano (no tiene posición fija)
-    { type: 'shadow', x: 0, y: 0, name: 'Síndrome del Impostor' }
+    { type: 'magnet', x: 600, y: 270, w: 55, h: 50, name: 'Distracciones' }
   ],
   start: { x: 50, y: 500 },
   exit: { x: 750, y: 80 }
@@ -365,6 +362,7 @@ class Founder {
     this.sprite.setSize(20, 30);
     this.sprite.setGravityY(GRAVITY);
     this.sprite.setCollideWorldBounds(true);
+    this.sprite.setVisible(false);
     this.graphics = scene.add.graphics();
 
     this.nameText = scene.add.text(x, y - 35, 'Founder', {
@@ -384,9 +382,29 @@ class Founder {
     this.graphics.clear();
     const x = this.sprite.x;
     const y = this.sprite.y;
+
+    // Cuerpo (rectángulo redondeado simulado)
     this.graphics.fillStyle(0xff6b35, 1);
-    this.graphics.fillRect(x - 10, y - 15, 20, 30);
-    // Borde eliminado para verificar que los cambios se aplican
+    this.graphics.fillRect(x - 8, y - 5, 16, 20);
+
+    // Cabeza (círculo)
+    this.graphics.fillStyle(0xff6b35, 1);
+    this.graphics.fillCircle(x, y - 15, 8);
+
+    // Brazos simples (líneas)
+    this.graphics.lineStyle(2, 0xff6b35, 1);
+    this.graphics.lineBetween(x - 8, y - 5, x - 14, y - 3);  // Brazo izquierdo
+    this.graphics.lineBetween(x + 8, y - 5, x + 14, y - 3);  // Brazo derecho
+
+    // Ojos (pequeños círculos blancos)
+    this.graphics.fillStyle(0xffffff, 1);
+    this.graphics.fillCircle(x - 3, y - 17, 2);
+    this.graphics.fillCircle(x + 3, y - 17, 2);
+
+    // Pupilas (pequeños círculos oscuros)
+    this.graphics.fillStyle(0x1a1a2e, 1);
+    this.graphics.fillCircle(x - 3, y - 17, 1);
+    this.graphics.fillCircle(x + 3, y - 17, 1);
   }
 
   destroy() {
@@ -407,8 +425,10 @@ class Idea {
     this.sprite = scene.physics.add.sprite(x, y, null);
     this.sprite.setSize(16, 16);
     this.sprite.setGravityY(0);
+    this.sprite.setVisible(false);
     this.graphics = scene.add.graphics();
     this.particleTimer = 0;
+    this.animTime = 0;  // Para animaciones
 
     // Sistema de fuerzas externas (para atracciones magnéticas, etc.)
     this.externalForceX = 0;
@@ -427,15 +447,22 @@ class Idea {
   }
 
   update(delta, targetPos) {
-    // Si no está atrapada, seguir el targetPos normalmente
+    // Si no está atrapada, levitar al lado izquierdo del jugador
     if (!this.isTrapped) {
-      const dx = targetPos.x - this.sprite.x;
-      const dy = targetPos.y - this.sprite.y;
+      // Posición objetivo: lado izquierdo del jugador a la misma altura
+      const offsetX = -25;  // 25 píxeles a la izquierda
+      const offsetY = 0;    // Misma altura que el jugador
+
+      const targetX = targetPos.x + offsetX;
+      const targetY = targetPos.y + offsetY;
+
+      const dx = targetX - this.sprite.x;
+      const dy = targetY - this.sprite.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
 
-      // Deadzone de 5px para evitar vibración cuando la idea está quieta
-      if (dist > 5) {
-        const speed = 5;
+      // Deadzone de 2px para suavidad
+      if (dist > 2) {
+        const speed = 3.5;  // Velocidad de seguimiento suave
         this.sprite.x += (dx / dist) * speed;
         this.sprite.y += (dy / dist) * speed;
       }
@@ -451,6 +478,7 @@ class Idea {
     this.externalForceY = 0;
 
     this.particleTimer += delta;
+    this.animTime += delta;  // Incrementar tiempo de animación
     this.draw();
     this.nameText.setPosition(this.sprite.x, this.sprite.y - 30);
   }
@@ -465,29 +493,65 @@ class Idea {
     this.graphics.clear();
     const x = this.sprite.x;
     const y = this.sprite.y;
+    const t = (this.animTime % 1000) / 1000;  // Ciclo de 1 segundo
 
     if (this.stage === 0) {
-      this.graphics.fillStyle(0xffff00, 1);
-      this.graphics.fillCircle(x, y, 8);
-      this.graphics.fillStyle(0xffffff, 0.7);
-      this.graphics.fillCircle(x, y, 4);
+      // Chispa pulsante (stage 0)
+      const pulse = 1 + Math.sin(t * Math.PI * 2) * 0.3;
+      const size = 8 * pulse;
+
+      // Aura externa (pulsante)
       this.graphics.fillStyle(0xffff00, 0.2);
-      this.graphics.fillCircle(x, y, 12);
+      this.graphics.fillCircle(x, y, 14 * pulse);
+
+      // Núcleo amarillo
+      this.graphics.fillStyle(0xffff00, 1);
+      this.graphics.fillCircle(x, y, size);
+
+      // Centro blanco brillante
+      this.graphics.fillStyle(0xffffff, 0.8);
+      this.graphics.fillCircle(x, y, size * 0.5);
     } else if (this.stage === 1) {
+      // Prototipo rotante (stage 1)
+      const angle = t * Math.PI * 2;
+
+      // Cuadrados giratorios
+      this.graphics.save();
+      this.graphics.translateCanvas(x, y);
+      this.graphics.rotateCanvas(angle);
+
       this.graphics.lineStyle(2, 0x00ffff, 1);
-      this.graphics.strokeRect(x - 8, y - 8, 16, 16);
-      this.graphics.strokeRect(x - 6, y - 6, 12, 12);
-      this.graphics.lineBetween(x - 8, y - 8, x - 6, y - 6);
-      this.graphics.lineBetween(x + 8, y - 8, x + 6, y - 6);
-      this.graphics.lineBetween(x - 8, y + 8, x - 6, y + 6);
-      this.graphics.lineBetween(x + 8, y + 8, x + 6, y + 6);
+      this.graphics.strokeRect(-8, -8, 16, 16);
+      this.graphics.strokeRect(-5, -5, 10, 10);
+
+      // Líneas diagonales que rotan
+      this.graphics.lineBetween(-8, -8, -4, -4);
+      this.graphics.lineBetween(8, -8, 4, -4);
+      this.graphics.lineBetween(-8, 8, -4, 4);
+      this.graphics.lineBetween(8, 8, 4, 4);
+
+      this.graphics.restore();
     } else {
+      // Producto con brillo (stage 2)
+      const shine = Math.sin(t * Math.PI * 2);
+
+      // Cuadrado principal
       this.graphics.fillStyle(0xff6b35, 1);
       this.graphics.fillRect(x - 10, y - 10, 20, 20);
-      this.graphics.lineStyle(2, 0xffffff, 1);
+
+      // Borde blanco
+      this.graphics.lineStyle(2.5, 0xffffff, 1);
       this.graphics.strokeRect(x - 10, y - 10, 20, 20);
-      this.graphics.fillStyle(0xffffff, 0.3);
-      this.graphics.fillRect(x - 8, y - 8, 6, 6);
+
+      // Destello que brilla (esquina)
+      this.graphics.fillStyle(0xffffff, Math.max(0.2, shine * 0.7));
+      this.graphics.fillRect(x - 8, y - 8, 8, 8);
+
+      // Pequeño punto de luz moviéndose
+      const lightX = x - 6 + Math.sin(t * Math.PI * 4) * 4;
+      const lightY = y - 6 + Math.cos(t * Math.PI * 4) * 4;
+      this.graphics.fillStyle(0xffffff, 0.6);
+      this.graphics.fillCircle(lightX, lightY, 2);
     }
   }
 
@@ -989,7 +1053,10 @@ function update(time, delta) {
 
   gameState.pathRecorder.record(gameState.founder.sprite.x, gameState.founder.sprite.y);
   const targetPos = gameState.pathRecorder.getDelayedPosition();
-  
+
+  // Actualizar portal animado
+  if (gameState.exitPortal) gameState.exitPortal.update(delta);
+
   // Primero los enemigos aplican sus fuerzas externas a la idea
   gameState.enemies.forEach(enemy => {
     if (enemy.type === 'shadow') enemy.update(delta, gameState.founder);
@@ -998,7 +1065,7 @@ function update(time, delta) {
     else enemy.update(delta);
     enemy.checkCollision(gameState.founder, gameState.idea, gameState.focusSystem);
   });
-  
+
   // Luego la idea se actualiza, aplicando las fuerzas externas acumuladas
   gameState.idea.update(delta, targetPos);
   gameState.focusSystem.update(gameState.founder, gameState.idea, delta);
@@ -1104,34 +1171,57 @@ function startLevel(scene, levelIndex) {
       }).setScrollFactor(0).setDepth(1000);
     }
 
-    gameState.exitCircle = scene.add.circle(level.exit.x, level.exit.y, 50, 0x00ff00, 0.3);
-    gameState.exitBorder = scene.add.circle(level.exit.x, level.exit.y, 50);
-    gameState.exitBorder.setStrokeStyle(3, 0x00ff00);
+    // Portal minimalista estilo Apple
+    gameState.exitPortal = {
+      x: level.exit.x,
+      y: level.exit.y,
+      time: 0,
+      graphics: scene.add.graphics(),
+      update: function(delta) {
+        this.time += delta;
+        this.graphics.clear();
 
-    // Agregar nombre a la meta según el nivel
-    const exitNames = {
-      0: 'Lanza tu Idea',
-      1: 'Comercializa',
-      2: 'Impacta Mundo'
+        const t = (this.time % 2400) / 2400; // Ciclo más lento y elegante
+        const breathe = 1 + Math.sin(t * Math.PI * 2) * 0.08; // Respiración sutil
+
+        // Anillo exterior delgado (muy sutil)
+        const outerRadius = 45;
+        this.graphics.lineStyle(1.5, 0xffffff, 0.15 + Math.sin(t * Math.PI * 2) * 0.05);
+        this.graphics.strokeCircle(this.x, this.y, outerRadius * breathe);
+
+        // Anillo principal (elegante y delgado)
+        const mainRadius = 32;
+        const alpha = 0.3 + Math.sin(t * Math.PI * 2) * 0.1;
+        this.graphics.lineStyle(2, 0xffffff, alpha);
+        this.graphics.strokeCircle(this.x, this.y, mainRadius);
+
+        // Centro minimalista - punto sólido
+        this.graphics.fillStyle(0xffffff, 0.9);
+        this.graphics.fillCircle(this.x, this.y, 4 * breathe);
+
+        // Highlight sutil (pequeño punto de brillo)
+        this.graphics.fillStyle(0xffffff, 0.4 + Math.sin(t * Math.PI * 4) * 0.2);
+        this.graphics.fillCircle(this.x - 1, this.y - 1, 2);
+      },
+      destroy: function() {
+        this.graphics.destroy();
+      }
     };
-    const exitText = scene.add.text(level.exit.x, level.exit.y - 70, exitNames[levelIndex] || 'Objetivo', {
-      fontSize: '12px',
-      fill: '#00ff00',
-      fontFamily: 'monospace',
-      fontStyle: 'bold',
-      backgroundColor: '#000000',
-      padding: { x: 5, y: 3 }
+
+    // Texto minimalista debajo del portal
+    const exitNames = {
+      0: 'Lanzar',
+      1: 'Comercializar',
+      2: 'Impactar'
+    };
+    const exitText = scene.add.text(level.exit.x, level.exit.y + 55, exitNames[levelIndex] || 'Meta', {
+      fontSize: '11px',
+      fill: '#ffffff',
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      fontStyle: 'normal',
+      alpha: 0.6
     }).setOrigin(0.5);
     gameState.exitText = exitText;
-    scene.tweens.add({
-      targets: [gameState.exitCircle, gameState.exitBorder],
-      scale: { from: 1, to: 1.2 },
-      alpha: { from: 0.5, to: 0.8 },
-      duration: 1000,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Sine.easeInOut'
-    });
 
     playTone(scene, 440, 0.1);
   });
@@ -1143,13 +1233,9 @@ function cleanupLevel(scene) {
   scene.tweens.killAll();
   scene.time.removeAllEvents();
 
-  if (gameState.exitCircle) {
-    gameState.exitCircle.destroy();
-    gameState.exitCircle = null;
-  }
-  if (gameState.exitBorder) {
-    gameState.exitBorder.destroy();
-    gameState.exitBorder = null;
+  if (gameState.exitPortal) {
+    gameState.exitPortal.destroy();
+    gameState.exitPortal = null;
   }
   if (gameState.exitText) {
     gameState.exitText.destroy();

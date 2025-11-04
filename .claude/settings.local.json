@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(pnpm check-restrictions:*)",
-      "Bash(pnpm build:*)"
+      "Bash(pnpm build:*)",
+      "Bash(timeout 30 pnpm check-restrictions:*)"
     ],
     "deny": [],
     "ask": []

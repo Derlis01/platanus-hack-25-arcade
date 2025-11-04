@@ -36,10 +36,7 @@ const LEVEL_0_GARAGE = {
 
     // Sofá #2: "Distracción" - En la zona 3, crea peligro en la subida rápida
     // Requiere planificación de ruta
-    { type: 'magnet', x: 600, y: 270, w: 55, h: 50, name: 'Distracciones' },
-
-    // Síndrome del Impostor: Acecha en segundo plano (no tiene posición fija)
-    { type: 'shadow', x: 0, y: 0, name: 'Síndrome del Impostor' }
+    { type: 'magnet', x: 600, y: 270, w: 55, h: 50, name: 'Distracciones' }
   ],
   start: { x: 50, y: 500 },
   exit: { x: 750, y: 80 }
