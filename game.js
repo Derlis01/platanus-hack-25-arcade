@@ -1,7 +1,25 @@
 // =============================================================================
-// EL HACEDOR - Platanus Hack 25
-// Un juego sobre proteger tu Idea a través del caos
+// CONSTANTS
 // =============================================================================
+const GAME_WIDTH = 800;
+const GAME_HEIGHT = 600;
+const GRAVITY = 800;
+const PLAYER_SPEED = 180;
+const JUMP_VELOCITY = -400;
+const PATH_SAMPLE_RATE = 3;
+const PATH_DELAY_FRAMES = 10;
+const MAX_DISTANCE = 100;
+const DISTANCE_DRAIN_RATE = 1.7;
+
+const GAME_STATE = {
+  INTRO: 'INTRO',
+  LEVEL_INTRO: 'LEVEL_INTRO',
+  PLAYING: 'PLAYING',
+  GAMEOVER: 'GAMEOVER',
+  LEVEL_COMPLETE: 'LEVEL_COMPLETE',
+  ENDING: 'ENDING'
+};
+
 
 // =============================================================================
 // ARCADE CONTROLS
@@ -43,30 +61,9 @@ for (const [arcadeCode, keyboardKeys] of Object.entries(ARCADE_CONTROLS)) {
   }
 }
 
-// =============================================================================
-// CONSTANTS
-// =============================================================================
-const GAME_WIDTH = 800;
-const GAME_HEIGHT = 600;
-const GRAVITY = 800;
-const PLAYER_SPEED = 180;
-const JUMP_VELOCITY = -400;
-const PATH_SAMPLE_RATE = 3;
-const PATH_DELAY_FRAMES = 30;
-const MAX_DISTANCE = 250;
-const DISTANCE_DRAIN_RATE = 0.18;
-
-const GAME_STATE = {
-  INTRO: 'INTRO',
-  LEVEL_INTRO: 'LEVEL_INTRO',
-  PLAYING: 'PLAYING',
-  GAMEOVER: 'GAMEOVER',
-  LEVEL_COMPLETE: 'LEVEL_COMPLETE',
-  ENDING: 'ENDING'
-};
 
 // =============================================================================
-// DATA
+// TEXTS
 // =============================================================================
 const TEXTS = {
   intro: {
@@ -107,87 +104,106 @@ const TEXTS = {
   ]
 };
 
-const LEVELS = [
-  {
-    id: 0,
-    name: "El Garaje",
-    bg: 0x1a1a2e,
-    ideaStage: 0,
-    platforms: [
-      { x: 0, y: 560, w: 800, h: 40 },
-      { x: 120, y: 480, w: 120, h: 20 },
-      { x: 280, y: 400, w: 120, h: 20 },
-      { x: 450, y: 320, w: 130, h: 20 },
-      { x: 600, y: 240, w: 150, h: 20 },
-      { x: 680, y: 160, w: 120, h: 20 }
-    ],
-    enemies: [
-      { type: 'magnet', x: 300, y: 510, w: 60, h: 60, name: 'Procrastinación' },
-      { type: 'shadow', x: 0, y: 0, name: 'Síndrome del Impostor' }
-    ],
-    start: { x: 50, y: 500 },
-    exit: { x: 720, y: 130 }
-  },
-  {
-    id: 1,
-    name: "La Fábrica",
-    bg: 0x2a2a4e,
-    ideaStage: 1,
-    platforms: [
-      { x: 0, y: 560, w: 200, h: 40 },
-      { x: 300, y: 480, w: 150, h: 20 },
-      { x: 500, y: 380, w: 100, h: 20 },
-      { x: 200, y: 280, w: 150, h: 20, falling: true },
-      { x: 400, y: 180, w: 150, h: 20 },
-      { x: 600, y: 120, w: 180, h: 20 }
-    ],
-    enemies: [
-      { type: 'bug', x: 300, y: 460, patrol: [300, 430] },
-      { type: 'eye', x: 400, y: 300, rotSpeed: 1.5 },
-      { type: 'bug', x: 600, y: 100, patrol: [600, 750] }
-    ],
-    start: { x: 50, y: 500 },
-    exit: { x: 700, y: 80 }
-  },
-  {
-    id: 2,
-    name: "El Mercado",
-    bg: 0x4a2a4e,
-    ideaStage: 2,
-    platforms: [
-      { x: 0, y: 560, w: 800, h: 40 },
-      { x: 100, y: 450, w: 100, h: 80 },
-      { x: 400, y: 450, w: 100, h: 80 },
-      { x: 600, y: 450, w: 100, h: 80 }
-    ],
-    enemies: [
-      { type: 'cannon', x: 50, y: 50, targetIdea: true },
-      { type: 'cannon', x: 750, y: 50, targetIdea: true },
-      { type: 'cannon', x: 400, y: 0, targetIdea: true },
-      { type: 'bubble', x: 200, y: 300, bouncing: true },
-      { type: 'bubble', x: 600, y: 300, bouncing: true }
-    ],
-    start: { x: 400, y: 500 },
-    exit: { x: 400, y: 100 }
-  }
-];
 
 // =============================================================================
-// GLOBAL STATE
+// LEVEL 0: EL GARAJE
 // =============================================================================
-const gameState = {
-  currentState: GAME_STATE.INTRO,
-  currentLevel: 0,
-  founder: null,
-  idea: null,
-  pathRecorder: null,
-  focusSystem: null,
-  platforms: null,
-  enemies: [],
-  cursors: null,
-  keys: {},
-  currentScene: null
+const LEVEL_0_GARAGE = {
+  id: 0,
+  name: "El Garaje",
+  bg: 0x1a1a2e,
+  ideaStage: 0,
+  platforms: [
+    // Base (piso principal)
+    { x: 0, y: 560, w: 800, h: 40 },
+
+    // ZONA 1: Salida inicial - Plataformas pequeñas para ganar altura
+    { x: 40, y: 490, w: 80, h: 18 },      // Plat 1: Pequeña, requiere precisión
+    { x: 130, y: 450, w: 70, h: 18 },     // Plat 2: Más pequeña, brecha más grande
+    { x: 210, y: 410, w: 90, h: 18 },     // Plat 3: Un poco más ancha para respiro
+
+    // ZONA 2: Área del primer sofá - Movimiento lateral con peligro
+    { x: 310, y: 360, w: 60, h: 18 },     // Plat 4: Estrecha, junto al sofá
+    { x: 390, y: 330, w: 80, h: 18 },     // Plat 5: Salto diagonal para evitar sofá
+    { x: 480, y: 310, w: 75, h: 18 },     // Plat 6: Aterrizaje preciso
+
+    // ZONA 3: Subida rápida - Plataformas más generosas
+    { x: 540, y: 270, w: 100, h: 18 },    // Plat 7: Más ancha para estabilidad
+    { x: 620, y: 230, w: 90, h: 18 },     // Plat 8: Diagonal pero amplia
+    { x: 580, y: 190, w: 95, h: 18 },     // Plat 9: Buena zona de aterrizaje
+
+    // ZONA 4: Recta final hacia la salida (SIMPLIFICADA)
+    { x: 650, y: 150, w: 100, h: 18 },    // Plat 10: Plataforma ancha para respirar
+    { x: 700, y: 110, w: 100, h: 50 }     // Plat 11: Salida generosa y fácil
+  ],
+  enemies: [
+    // Sofá #1: "Procrastinación" - Posicionado estratégicamente en zona 2
+    // Fuerza al jugador a saltar con precisión para evitarlo
+    { type: 'magnet', x: 300, y: 380, w: 60, h: 50, name: 'Procrastinaciones' },
+
+    // Sofá #2: "Distracción" - En la zona 3, crea peligro en la subida rápida
+    // Requiere planificación de ruta
+    { type: 'magnet', x: 600, y: 270, w: 55, h: 50, name: 'Distracciones' },
+
+    // Síndrome del Impostor: Acecha en segundo plano (no tiene posición fija)
+    { type: 'shadow', x: 0, y: 0, name: 'Síndrome del Impostor' }
+  ],
+  start: { x: 50, y: 500 },
+  exit: { x: 750, y: 80 }
 };
+
+
+// =============================================================================
+// LEVEL 1: LA FÁBRICA
+// =============================================================================
+const LEVEL_1_FACTORY = {
+  id: 1,
+  name: "La Fábrica",
+  bg: 0x2a2a4e,
+  ideaStage: 1,
+  platforms: [
+    { x: 0, y: 560, w: 200, h: 40 },
+    { x: 300, y: 480, w: 150, h: 20 },
+    { x: 500, y: 380, w: 100, h: 20 },
+    { x: 200, y: 280, w: 150, h: 20, falling: true },
+    { x: 400, y: 180, w: 150, h: 20 },
+    { x: 600, y: 120, w: 180, h: 20 }
+  ],
+  enemies: [
+    { type: 'bug', x: 300, y: 460, patrol: [300, 430] },
+    { type: 'eye', x: 400, y: 300, rotSpeed: 1.5 },
+    { type: 'bug', x: 600, y: 100, patrol: [600, 750] }
+  ],
+  start: { x: 50, y: 500 },
+  exit: { x: 700, y: 80 }
+};
+
+
+// =============================================================================
+// LEVEL 2: EL MERCADO
+// =============================================================================
+const LEVEL_2_MARKET = {
+  id: 2,
+  name: "El Mercado",
+  bg: 0x4a2a4e,
+  ideaStage: 2,
+  platforms: [
+    { x: 0, y: 560, w: 800, h: 40 },
+    { x: 100, y: 450, w: 100, h: 80 },
+    { x: 400, y: 450, w: 100, h: 80 },
+    { x: 600, y: 450, w: 100, h: 80 }
+  ],
+  enemies: [
+    { type: 'cannon', x: 50, y: 50, targetIdea: true },
+    { type: 'cannon', x: 750, y: 50, targetIdea: true },
+    { type: 'cannon', x: 400, y: 0, targetIdea: true },
+    { type: 'bubble', x: 200, y: 300, bouncing: true },
+    { type: 'bubble', x: 600, y: 300, bouncing: true }
+  ],
+  start: { x: 400, y: 500 },
+  exit: { x: 400, y: 100 }
+};
+
 
 // =============================================================================
 // PathRecorder
@@ -222,6 +238,7 @@ class PathRecorder {
     this.frameCount = 0;
   }
 }
+
 
 // =============================================================================
 // FocusSystem
@@ -337,6 +354,7 @@ class FocusSystem {
   }
 }
 
+
 // =============================================================================
 // Founder
 // =============================================================================
@@ -368,8 +386,7 @@ class Founder {
     const y = this.sprite.y;
     this.graphics.fillStyle(0xff6b35, 1);
     this.graphics.fillRect(x - 10, y - 15, 20, 30);
-    this.graphics.lineStyle(2, 0xffffff, 1);
-    this.graphics.strokeRect(x - 10, y - 15, 20, 30);
+    // Borde eliminado para verificar que los cambios se aplican
   }
 
   destroy() {
@@ -378,6 +395,7 @@ class Founder {
     if (this.nameText) this.nameText.destroy();
   }
 }
+
 
 // =============================================================================
 // Idea
@@ -392,6 +410,14 @@ class Idea {
     this.graphics = scene.add.graphics();
     this.particleTimer = 0;
 
+    // Sistema de fuerzas externas (para atracciones magnéticas, etc.)
+    this.externalForceX = 0;
+    this.externalForceY = 0;
+
+    // Estado de trampa - cuando la idea es atrapada permanentemente
+    this.isTrapped = false;
+    this.trapSource = null; // Referencia al objeto que la atrapa
+
     this.nameText = scene.add.text(x, y - 30, 'Idea', {
       fontSize: '12px',
       fontFamily: 'Arial',
@@ -401,19 +427,38 @@ class Idea {
   }
 
   update(delta, targetPos) {
-    const dx = targetPos.x - this.sprite.x;
-    const dy = targetPos.y - this.sprite.y;
-    const dist = Math.sqrt(dx * dx + dy * dy);
+    // Si no está atrapada, seguir el targetPos normalmente
+    if (!this.isTrapped) {
+      const dx = targetPos.x - this.sprite.x;
+      const dy = targetPos.y - this.sprite.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
 
-    if (dist > 1) {
-      const speed = 5;
-      this.sprite.x += (dx / dist) * speed;
-      this.sprite.y += (dy / dist) * speed;
+      // Deadzone de 5px para evitar vibración cuando la idea está quieta
+      if (dist > 5) {
+        const speed = 5;
+        this.sprite.x += (dx / dist) * speed;
+        this.sprite.y += (dy / dist) * speed;
+      }
     }
+
+    // Aplicar fuerzas externas (atracciones magnéticas, etc.)
+    // Esto SIEMPRE se aplica, incluso si está atrapada
+    this.sprite.x += this.externalForceX;
+    this.sprite.y += this.externalForceY;
+
+    // Resetear fuerzas para el próximo frame
+    this.externalForceX = 0;
+    this.externalForceY = 0;
 
     this.particleTimer += delta;
     this.draw();
     this.nameText.setPosition(this.sprite.x, this.sprite.y - 30);
+  }
+  
+  // Método para aplicar fuerza externa (llamado por enemigos)
+  applyForce(fx, fy) {
+    this.externalForceX += fx;
+    this.externalForceY += fy;
   }
 
   draw() {
@@ -453,8 +498,9 @@ class Idea {
   }
 }
 
+
 // =============================================================================
-// Enemies
+// Enemies - Base Class
 // =============================================================================
 class Enemy {
   constructor(scene, config) {
@@ -471,6 +517,22 @@ class Enemy {
   }
 }
 
+function createEnemy(scene, config) {
+  switch (config.type) {
+    case 'magnet': return new Magnet(scene, config);
+    case 'shadow': return new Shadow(scene, config);
+    case 'bug': return new Bug(scene, config);
+    case 'eye': return new Eye(scene, config);
+    case 'cannon': return new Cannon(scene, config);
+    case 'bubble': return new Bubble(scene, config);
+    default: return null;
+  }
+}
+
+
+// =============================================================================
+// Magnet Enemy (Procrastinación - Sofá)
+// =============================================================================
 class Magnet extends Enemy {
   constructor(scene, config) {
     super(scene, config);
@@ -480,35 +542,140 @@ class Magnet extends Enemy {
     this.h = config.h || 80;
     this.radius = 120;
     this.pulseTimer = 0;
+    this.trapTimer = 0; // Tiempo acumulado que la idea está en el radio
+    this.name = config.name || 'Sofá';
+    
+    // Crear texto con el nombre - mejor contraste
+    this.nameText = scene.add.text(
+      this.x + this.w/2,
+      this.y - 15,
+      this.name,
+      { 
+        fontSize: '13px', 
+        fill: '#ffffff',
+        fontFamily: 'monospace',
+        stroke: '#663366',
+        strokeThickness: 4,
+        fontStyle: 'bold'
+      }
+    ).setOrigin(0.5);
   }
 
   update(delta) {
     this.pulseTimer += delta;
     this.graphics.clear();
+
+    // Dibujar sofá con forma más realista
+    const centerX = this.x + this.w / 2;
+    const centerY = this.y + this.h / 2;
+    const armWidth = this.w * 0.15;
+    const seatHeight = this.h * 0.6;
+    const backHeight = this.h * 0.5;
+
+    // Color base del sofá
+    this.graphics.fillStyle(0x8B4789, 1);
+
+    // Asiento principal
+    this.graphics.fillRect(this.x + armWidth, centerY - seatHeight / 2, this.w - 2 * armWidth, seatHeight);
+
+    // Brazos izquierdo y derecho (más oscuro)
     this.graphics.fillStyle(0x663366, 1);
-    this.graphics.fillRect(this.x, this.y, this.w, this.h);
+    this.graphics.fillRect(this.x, centerY - seatHeight / 2, armWidth, seatHeight);
+    this.graphics.fillRect(this.x + this.w - armWidth, centerY - seatHeight / 2, armWidth, seatHeight);
+
+    // Respaldo (atrás)
+    this.graphics.fillStyle(0x9966cc, 1);
+    this.graphics.fillRect(this.x + armWidth * 0.5, this.y - backHeight / 2, this.w - armWidth, backHeight);
+
+    // Efecto de atracción (pulso)
     const pulse = Math.sin(this.pulseTimer * 0.003) * 0.3 + 0.7;
-    this.graphics.fillStyle(0x9966cc, 0.2 * pulse);
-    this.graphics.fillCircle(this.x + this.w/2, this.y + this.h/2, this.radius);
+    this.graphics.fillStyle(0x9966cc, 0.15 * pulse);
+    this.graphics.fillCircle(centerX, centerY, this.radius);
   }
 
   checkCollision(founder, idea, focusSystem) {
-    if (founder && founder.sprite && founder.sprite.body) {
-      const fdist = Phaser.Math.Distance.Between(
-        founder.sprite.x, founder.sprite.y,
-        this.x + this.w/2, this.y + this.h/2
+    const centerX = this.x + this.w/2;
+    const centerY = this.y + this.h/2;
+
+    // SOLO afectar a la idea - NO al fundador
+    if (idea && idea.sprite && idea.applyForce) {
+      const ideaDist = Phaser.Math.Distance.Between(
+        idea.sprite.x, idea.sprite.y,
+        centerX, centerY
       );
-      if (fdist < this.radius) {
-        const dx = this.x + this.w/2 - founder.sprite.x;
-        const dy = this.y + this.h/2 - founder.sprite.y;
-        const force = Math.max(0, 1 - fdist / this.radius) * 3;
-        founder.sprite.setVelocityX(founder.sprite.body.velocity.x + dx * force);
-        founder.sprite.setVelocityY(founder.sprite.body.velocity.y + dy * force);
+
+      // Si ya está atrapada, mantenerla en el centro del magnet
+      if (idea.isTrapped) {
+        const dx = centerX - idea.sprite.x;
+        const dy = centerY - idea.sprite.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist > 0.1) {
+          // Fuerza muy fuerte para mantenerla pegada al centro
+          const pullStrength = 8;
+          const forceX = (dx / dist) * pullStrength;
+          const forceY = (dy / dist) * pullStrength;
+          idea.applyForce(forceX, forceY);
+        }
+        return; // No calcular más si ya está atrapada
+      }
+
+      if (ideaDist < this.radius) {
+        // Aumentar el timer mientras la idea está dentro del radio
+        this.trapTimer += 16; // ~16ms por frame a 60fps
+
+        const timeInSeconds = this.trapTimer / 1000;
+
+        // TRAMPA PERMANENTE después de 3 segundos
+        if (timeInSeconds >= 3.0) {
+          idea.isTrapped = true;
+          idea.trapSource = this;
+          return; // La lógica de trampa activa se maneja arriba
+        }
+
+        // La fuerza aumenta progresivamente mientras más tiempo pasa en el radio
+        // Fase 1 (0-0.8s): Atracción débil, se puede escapar fácilmente
+        // Fase 2 (0.8-2s): Atracción media-fuerte, difícil escapar
+        // Fase 3 (2-3s): Atracción muy fuerte, muy difícil escapar
+        let timeMultiplier;
+
+        if (timeInSeconds < 0.8) {
+          timeMultiplier = timeInSeconds / 0.8 * 0.6; // 0 a 0.6 (60%)
+        } else if (timeInSeconds < 2.0) {
+          timeMultiplier = 0.6 + (timeInSeconds - 0.8) / 1.2 * 0.8; // 0.6 a 1.4 (60% a 140%)
+        } else {
+          timeMultiplier = 1.4 + (timeInSeconds - 2.0) * 2; // 1.4 a 3.4 (140% a 340%)
+        }
+
+        const normalizedDist = ideaDist / this.radius;
+        const basePull = Math.pow(1 - normalizedDist, 2) * 15;
+        const pullStrength = basePull * timeMultiplier;
+
+        // Calcular dirección hacia el centro del sofá
+        const dx = centerX - idea.sprite.x;
+        const dy = centerY - idea.sprite.y;
+
+        // Aplicar la fuerza
+        const forceX = (dx / ideaDist) * pullStrength;
+        const forceY = (dy / ideaDist) * pullStrength;
+        idea.applyForce(forceX, forceY);
+      } else {
+        // Resetear el timer si la idea sale del radio
+        this.trapTimer = 0;
       }
     }
   }
+
+  destroy() {
+    if (this.nameText) this.nameText.destroy();
+    super.destroy();
+  }
 }
 
+
+// =============================================================================
+// Shadow Enemy (Síndrome del Impostor)
+// =============================================================================
 class Shadow extends Enemy {
   constructor(scene, config) {
     super(scene, config);
@@ -566,6 +733,10 @@ class Shadow extends Enemy {
   }
 }
 
+
+// =============================================================================
+// Bug Enemy
+// =============================================================================
 class Bug extends Enemy {
   constructor(scene, config) {
     super(scene, config);
@@ -602,6 +773,10 @@ class Bug extends Enemy {
   }
 }
 
+
+// =============================================================================
+// Eye Enemy
+// =============================================================================
 class Eye extends Enemy {
   constructor(scene, config) {
     super(scene, config);
@@ -647,6 +822,10 @@ class Eye extends Enemy {
   }
 }
 
+
+// =============================================================================
+// Cannon Enemy
+// =============================================================================
 class Cannon extends Enemy {
   constructor(scene, config) {
     super(scene, config);
@@ -701,6 +880,10 @@ class Cannon extends Enemy {
   }
 }
 
+
+// =============================================================================
+// Bubble Enemy
+// =============================================================================
 class Bubble extends Enemy {
   constructor(scene, config) {
     super(scene, config);
@@ -746,17 +929,32 @@ class Bubble extends Enemy {
   }
 }
 
-function createEnemy(scene, config) {
-  switch (config.type) {
-    case 'magnet': return new Magnet(scene, config);
-    case 'shadow': return new Shadow(scene, config);
-    case 'bug': return new Bug(scene, config);
-    case 'eye': return new Eye(scene, config);
-    case 'cannon': return new Cannon(scene, config);
-    case 'bubble': return new Bubble(scene, config);
-    default: return null;
-  }
-}
+
+// =============================================================================
+// GLOBAL STATE
+// =============================================================================
+const gameState = {
+  currentState: GAME_STATE.INTRO,
+  currentLevel: 0,
+  founder: null,
+  idea: null,
+  pathRecorder: null,
+  focusSystem: null,
+  platforms: null,
+  enemies: [],
+  cursors: null,
+  keys: {},
+  currentScene: null,
+  exitCircle: null,
+  exitBorder: null
+};
+
+// Array of levels
+const LEVELS = [
+  LEVEL_0_GARAGE,
+  LEVEL_1_FACTORY,
+  LEVEL_2_MARKET
+];
 
 // =============================================================================
 // STATE MANAGEMENT
@@ -772,30 +970,10 @@ function changeGameState(newState) {
   }
 }
 
-// =============================================================================
-// PHASER
-// =============================================================================
-const config = {
-  type: Phaser.AUTO,
-  width: GAME_WIDTH,
-  height: GAME_HEIGHT,
-  backgroundColor: '#000000',
-  physics: {
-    default: 'arcade',
-    arcade: {
-      gravity: { y: 0 },
-      debug: false
-    }
-  },
-  scene: {
-    preload: preload,
-    create: create,
-    update: update
-  }
-};
 
-const game = new Phaser.Game(config);
-
+// =============================================================================
+// PHASER LIFECYCLE FUNCTIONS
+// =============================================================================
 function preload() {}
 
 function create() {
@@ -811,10 +989,8 @@ function update(time, delta) {
 
   gameState.pathRecorder.record(gameState.founder.sprite.x, gameState.founder.sprite.y);
   const targetPos = gameState.pathRecorder.getDelayedPosition();
-  gameState.idea.update(delta, targetPos);
-  gameState.focusSystem.update(gameState.founder, gameState.idea, delta);
-  gameState.founder.update();
-
+  
+  // Primero los enemigos aplican sus fuerzas externas a la idea
   gameState.enemies.forEach(enemy => {
     if (enemy.type === 'shadow') enemy.update(delta, gameState.founder);
     else if (enemy.type === 'cannon') enemy.update(delta, gameState.idea);
@@ -822,45 +998,52 @@ function update(time, delta) {
     else enemy.update(delta);
     enemy.checkCollision(gameState.founder, gameState.idea, gameState.focusSystem);
   });
+  
+  // Luego la idea se actualiza, aplicando las fuerzas externas acumuladas
+  gameState.idea.update(delta, targetPos);
+  gameState.focusSystem.update(gameState.founder, gameState.idea, delta);
+  gameState.founder.update();
 
   handleInput(this, delta);
   checkLevelComplete(this);
 }
 
 // =============================================================================
-// GAME FUNCTIONS
+// INPUT HANDLING
 // =============================================================================
-function showIntroScreen(scene) {
-  gameState.currentState = GAME_STATE.INTRO;
+function handleInput(scene, delta) {
+  if (!gameState.founder || !gameState.founder.sprite || !gameState.founder.sprite.body) return;
 
-  const overlay = scene.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x000000);
-  const title = scene.add.text(GAME_WIDTH / 2, 200, TEXTS.intro.title, {
-    fontSize: '64px', fontFamily: 'Arial', color: '#ff6b35', fontStyle: 'bold'
-  }).setOrigin(0.5);
-  const subtitle = scene.add.text(GAME_WIDTH / 2, 300, TEXTS.intro.subtitle, {
-    fontSize: '24px', fontFamily: 'Arial', color: '#ffffff', align: 'center'
-  }).setOrigin(0.5);
-  const startText = scene.add.text(GAME_WIDTH / 2, 450, TEXTS.intro.start, {
-    fontSize: '20px', fontFamily: 'Arial', color: '#ffff00'
-  }).setOrigin(0.5);
+  const founder = gameState.founder.sprite;
+  let moveLeft = false, moveRight = false, jump = false;
 
-  scene.tweens.add({
-    targets: startText,
-    alpha: 0.3,
-    duration: 600,
-    yoyo: true,
-    repeat: -1
-  });
+  const keysPressed = scene.input.keyboard.keys;
+  for (const key in keysPressed) {
+    if (keysPressed[key].isDown) {
+      const arcadeCode = KEYBOARD_TO_ARCADE[keysPressed[key].originalEvent?.key];
+      if (arcadeCode === 'P1L') moveLeft = true;
+      if (arcadeCode === 'P1R') moveRight = true;
+      if (arcadeCode === 'P1U' || arcadeCode === 'P1A') jump = true;
+    }
+  }
 
-  scene.input.keyboard.once('keydown', () => {
-    overlay.destroy();
-    title.destroy();
-    subtitle.destroy();
-    startText.destroy();
-    startLevel(scene, 0);
-  });
+  if (gameState.keys.a.isDown || gameState.cursors.left.isDown) moveLeft = true;
+  if (gameState.keys.d.isDown || gameState.cursors.right.isDown) moveRight = true;
+  if (gameState.keys.w.isDown || gameState.keys.space.isDown || gameState.cursors.up.isDown || gameState.keys.u.isDown) jump = true;
+
+  if (moveLeft) founder.setVelocityX(-PLAYER_SPEED);
+  else if (moveRight) founder.setVelocityX(PLAYER_SPEED);
+  else founder.setVelocityX(0);
+
+  if (jump && founder.body.touching.down) {
+    founder.setVelocityY(JUMP_VELOCITY);
+    playTone(scene, 330, 0.1);
+  }
 }
 
+// =============================================================================
+// LEVEL MANAGEMENT
+// =============================================================================
 function startLevel(scene, levelIndex) {
   cleanupLevel(scene);
 
@@ -908,11 +1091,40 @@ function startLevel(scene, levelIndex) {
       }
     });
 
-    const exitCircle = scene.add.circle(level.exit.x, level.exit.y, 50, 0x00ff00, 0.3);
-    const exitBorder = scene.add.circle(level.exit.x, level.exit.y, 50);
-    exitBorder.setStrokeStyle(3, 0x00ff00);
+    // Agregar guía amigable en la esquina superior izquierda (solo en nivel 0)
+    gameState.guideText = null;
+    if (levelIndex === 0) {
+      gameState.guideText = scene.add.text(10, 10, '! Cuidado sofas !\nPasa rapido', {
+        fontSize: '12px',
+        fill: '#ffff00',
+        fontFamily: 'monospace',
+        fontStyle: 'bold',
+        backgroundColor: '#000000',
+        padding: { x: 6, y: 4 }
+      }).setScrollFactor(0).setDepth(1000);
+    }
+
+    gameState.exitCircle = scene.add.circle(level.exit.x, level.exit.y, 50, 0x00ff00, 0.3);
+    gameState.exitBorder = scene.add.circle(level.exit.x, level.exit.y, 50);
+    gameState.exitBorder.setStrokeStyle(3, 0x00ff00);
+
+    // Agregar nombre a la meta según el nivel
+    const exitNames = {
+      0: 'Lanza tu Idea',
+      1: 'Comercializa',
+      2: 'Impacta Mundo'
+    };
+    const exitText = scene.add.text(level.exit.x, level.exit.y - 70, exitNames[levelIndex] || 'Objetivo', {
+      fontSize: '12px',
+      fill: '#00ff00',
+      fontFamily: 'monospace',
+      fontStyle: 'bold',
+      backgroundColor: '#000000',
+      padding: { x: 5, y: 3 }
+    }).setOrigin(0.5);
+    gameState.exitText = exitText;
     scene.tweens.add({
-      targets: [exitCircle, exitBorder],
+      targets: [gameState.exitCircle, gameState.exitBorder],
       scale: { from: 1, to: 1.2 },
       alpha: { from: 0.5, to: 0.8 },
       duration: 1000,
@@ -931,6 +1143,22 @@ function cleanupLevel(scene) {
   scene.tweens.killAll();
   scene.time.removeAllEvents();
 
+  if (gameState.exitCircle) {
+    gameState.exitCircle.destroy();
+    gameState.exitCircle = null;
+  }
+  if (gameState.exitBorder) {
+    gameState.exitBorder.destroy();
+    gameState.exitBorder = null;
+  }
+  if (gameState.exitText) {
+    gameState.exitText.destroy();
+    gameState.exitText = null;
+  }
+  if (gameState.guideText) {
+    gameState.guideText.destroy();
+    gameState.guideText = null;
+  }
   if (gameState.focusSystem) {
     gameState.focusSystem.destroy();
     gameState.focusSystem = null;
@@ -950,54 +1178,6 @@ function cleanupLevel(scene) {
   gameState.enemies.forEach(e => { if (e && e.destroy) e.destroy(); });
   gameState.enemies = [];
   gameState.pathRecorder = null;
-}
-
-function showLevelIntro(scene, levelIndex, callback) {
-  const levelData = TEXTS.levels[levelIndex];
-  const overlay = scene.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x000000, 0.9);
-  const day = scene.add.text(GAME_WIDTH / 2, 200, levelData.day, {
-    fontSize: '48px', fontFamily: 'Arial', color: '#ff6b35', fontStyle: 'bold'
-  }).setOrigin(0.5);
-  const text = scene.add.text(GAME_WIDTH / 2, 300, levelData.text, {
-    fontSize: '24px', fontFamily: 'Arial', color: '#ffffff', align: 'center'
-  }).setOrigin(0.5);
-
-  scene.time.delayedCall(3000, () => {
-    overlay.destroy();
-    day.destroy();
-    text.destroy();
-    callback();
-  });
-}
-
-function handleInput(scene, delta) {
-  if (!gameState.founder || !gameState.founder.sprite || !gameState.founder.sprite.body) return;
-
-  const founder = gameState.founder.sprite;
-  let moveLeft = false, moveRight = false, jump = false;
-
-  const keysPressed = scene.input.keyboard.keys;
-  for (const key in keysPressed) {
-    if (keysPressed[key].isDown) {
-      const arcadeCode = KEYBOARD_TO_ARCADE[keysPressed[key].originalEvent?.key];
-      if (arcadeCode === 'P1L') moveLeft = true;
-      if (arcadeCode === 'P1R') moveRight = true;
-      if (arcadeCode === 'P1U' || arcadeCode === 'P1A') jump = true;
-    }
-  }
-
-  if (gameState.keys.a.isDown || gameState.cursors.left.isDown) moveLeft = true;
-  if (gameState.keys.d.isDown || gameState.cursors.right.isDown) moveRight = true;
-  if (gameState.keys.w.isDown || gameState.keys.space.isDown || gameState.cursors.up.isDown || gameState.keys.u.isDown) jump = true;
-
-  if (moveLeft) founder.setVelocityX(-PLAYER_SPEED);
-  else if (moveRight) founder.setVelocityX(PLAYER_SPEED);
-  else founder.setVelocityX(0);
-
-  if (jump && founder.body.touching.down) {
-    founder.setVelocityY(JUMP_VELOCITY);
-    playTone(scene, 330, 0.1);
-  }
 }
 
 function checkLevelComplete(scene) {
@@ -1023,6 +1203,76 @@ function handleLevelComplete(scene) {
     } else {
       changeGameState(GAME_STATE.ENDING);
     }
+  });
+}
+
+// =============================================================================
+// AUDIO
+// =============================================================================
+function playTone(scene, frequency, duration) {
+  const audioContext = scene.sound.context;
+  const oscillator = audioContext.createOscillator();
+  const gainNode = audioContext.createGain();
+  oscillator.connect(gainNode);
+  gainNode.connect(audioContext.destination);
+  oscillator.frequency.value = frequency;
+  oscillator.type = 'square';
+  gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+  gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+  oscillator.start(audioContext.currentTime);
+  oscillator.stop(audioContext.currentTime + duration);
+}
+
+
+// =============================================================================
+// GAME SCREENS
+// =============================================================================
+function showIntroScreen(scene) {
+  gameState.currentState = GAME_STATE.INTRO;
+
+  const overlay = scene.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x000000);
+  const title = scene.add.text(GAME_WIDTH / 2, 200, TEXTS.intro.title, {
+    fontSize: '64px', fontFamily: 'Arial', color: '#ff6b35', fontStyle: 'bold'
+  }).setOrigin(0.5);
+  const subtitle = scene.add.text(GAME_WIDTH / 2, 300, TEXTS.intro.subtitle, {
+    fontSize: '24px', fontFamily: 'Arial', color: '#ffffff', align: 'center'
+  }).setOrigin(0.5);
+  const startText = scene.add.text(GAME_WIDTH / 2, 450, TEXTS.intro.start, {
+    fontSize: '20px', fontFamily: 'Arial', color: '#ffff00'
+  }).setOrigin(0.5);
+
+  scene.tweens.add({
+    targets: startText,
+    alpha: 0.3,
+    duration: 600,
+    yoyo: true,
+    repeat: -1
+  });
+
+  scene.input.keyboard.once('keydown', () => {
+    overlay.destroy();
+    title.destroy();
+    subtitle.destroy();
+    startText.destroy();
+    startLevel(scene, 0);
+  });
+}
+
+function showLevelIntro(scene, levelIndex, callback) {
+  const levelData = TEXTS.levels[levelIndex];
+  const overlay = scene.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x000000, 0.9);
+  const day = scene.add.text(GAME_WIDTH / 2, 200, levelData.day, {
+    fontSize: '48px', fontFamily: 'Arial', color: '#ff6b35', fontStyle: 'bold'
+  }).setOrigin(0.5);
+  const text = scene.add.text(GAME_WIDTH / 2, 300, levelData.text, {
+    fontSize: '24px', fontFamily: 'Arial', color: '#ffffff', align: 'center'
+  }).setOrigin(0.5);
+
+  scene.time.delayedCall(3000, () => {
+    overlay.destroy();
+    day.destroy();
+    text.destroy();
+    callback();
   });
 }
 
@@ -1077,16 +1327,34 @@ function showEnding(scene) {
   scene.time.delayedCall(1000, () => playTone(scene, 659, 0.3));
 }
 
-function playTone(scene, frequency, duration) {
-  const audioContext = scene.sound.context;
-  const oscillator = audioContext.createOscillator();
-  const gainNode = audioContext.createGain();
-  oscillator.connect(gainNode);
-  gainNode.connect(audioContext.destination);
-  oscillator.frequency.value = frequency;
-  oscillator.type = 'square';
-  gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-  gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
-  oscillator.start(audioContext.currentTime);
-  oscillator.stop(audioContext.currentTime + duration);
-}
+
+// =============================================================================
+// EL HACEDOR - Platanus Hack 25
+// Un juego sobre proteger tu Idea a través del caos
+// =============================================================================
+
+// =============================================================================
+// PHASER
+// =============================================================================
+const config = {
+  type: Phaser.AUTO,
+  width: GAME_WIDTH,
+  height: GAME_HEIGHT,
+  backgroundColor: '#000000',
+  physics: {
+    default: 'arcade',
+    arcade: {
+      gravity: { y: 0 },
+      debug: false
+    }
+  },
+  scene: {
+    preload: preload,
+    create: create,
+    update: update
+  }
+};
+
+const game = new Phaser.Game(config);
+
+

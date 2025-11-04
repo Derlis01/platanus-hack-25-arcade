@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(pnpm check-restrictions:*)"
+      "Bash(pnpm check-restrictions:*)",
+      "Bash(pnpm build:*)"
     ],
     "deny": [],
     "ask": []

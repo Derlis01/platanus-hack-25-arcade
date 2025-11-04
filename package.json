@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "dev:old": "tsx --watch dev-server.ts",
+    "build": "node scripts/build.js",
+    "check": "pnpm build && pnpm check-restrictions",
     "check-restrictions": "tsx check-restrictions.ts"
   },
   "devDependencies": {
