@@ -9,6 +9,7 @@ class Cannon extends Enemy {
     this.fireTimer = 0;
     this.fireRate = 2000;
     this.projectiles = [];
+    this.createNameText(config.x, config.y);
   }
 
   update(delta, idea) {
@@ -38,6 +39,7 @@ class Cannon extends Enemy {
     this.graphics.fillRect(this.x - 10, this.y - 5, 20, 10);
     this.graphics.fillStyle(0xff0000, 1);
     this.projectiles.forEach(p => this.graphics.fillCircle(p.x, p.y, 5));
+    this.updateNamePosition(this.x, this.y);
   }
 
   checkCollision(founder, idea, focusSystem) {

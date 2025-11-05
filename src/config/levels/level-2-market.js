@@ -36,30 +36,30 @@ const LEVEL_2_MARKET = {
   enemies: [
     // === ZONA 1: EL RUIDO ===
     // Solo 3 bubbles (antes 5) - menos caos
-    { type: 'bubble', x: 150, y: 420, bouncing: true },
-    { type: 'bubble', x: 200, y: 260, bouncing: true },
-    { type: 'bubble', x: 120, y: 340, bouncing: true },
-    
+    { type: 'bubble', x: 150, y: 420, bouncing: true, name: 'Ruido' },
+    { type: 'bubble', x: 200, y: 260, bouncing: true, name: 'Distracción' },
+    { type: 'bubble', x: 120, y: 340, bouncing: true, name: 'Ruido' },
+
     // CAFÉ 1: Después de sobrevivir al ruido inicial
     { type: 'coffee', x: 220, y: 210 },
-    
+
     // === ZONA 2: LA COMPETENCIA ===
     // Solo 2 cannons (antes 3) - menos fuego cruzado
-    { type: 'cannon', x: 320, y: 10, targetIdea: true },
-    { type: 'cannon', x: 530, y: 560, targetIdea: true },
-    
+    { type: 'cannon', x: 320, y: 10, targetIdea: true, name: 'Crítico' },
+    { type: 'cannon', x: 530, y: 560, targetIdea: true, name: 'Competencia' },
+
     // Solo 1 eye (antes 2) - más espacio para maniobrar
-    { type: 'eye', x: 430, y: 270, radius: 70 },
-    
+    { type: 'eye', x: 430, y: 270, radius: 70, name: 'Vigilancia' },
+
     // CAFÉ 2: Antes de la zona final (crítico)
     { type: 'coffee', x: 520, y: 120 },
-    
+
     // === ZONA 3: LA TENTACIÓN FINAL ===
     // Magnet más pequeño y alejado
-    { type: 'magnet', x: 600, y: 230, w: 55, h: 55 },
-    
+    { type: 'magnet', x: 600, y: 230, w: 55, h: 55, name: 'Zona de Comfort' },
+
     // Sin shadow - una amenaza menos
-    
+
     // CAFÉ 3: Recompensa antes del salto final
     { type: 'coffee', x: 630, y: 160 }
   ],

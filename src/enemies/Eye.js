@@ -18,34 +18,36 @@ class Eye extends Enemy {
     if (this.freezeTimer > 0) this.freezeTimer -= delta;
 
     this.graphics.clear();
-    
+
     // Cuerpo del ojo (gris)
     this.graphics.fillStyle(0x666666, 1);
     this.graphics.fillCircle(this.x, this.y, 15);
-    
+
     // Pupila roja que rota
     this.graphics.fillStyle(0xff0000, 1);
     const px = this.x + Math.cos(this.angle) * 5;
     const py = this.y + Math.sin(this.angle) * 5;
     this.graphics.fillCircle(px, py, 5);
-    
+
     // Rayo de visión (rojo cuando congela, azul cuando busca)
     const rayColor = this.freezeTimer > 0 ? 0xff0000 : 0x00ffff;
     const rayAlpha = this.freezeTimer > 0 ? 0.8 : 0.5;
     this.graphics.lineStyle(3, rayColor, rayAlpha);
     this.graphics.lineBetween(
-      this.x, 
-      this.y, 
-      this.x + Math.cos(this.angle) * this.range, 
+      this.x,
+      this.y,
+      this.x + Math.cos(this.angle) * this.range,
       this.y + Math.sin(this.angle) * this.range
     );
-    
+
     // Si está congelando, añadir un círculo pulsante de alerta
     if (this.freezeTimer > 0) {
       const pulse = 1 + Math.sin(Date.now() * 0.01) * 0.3;
       this.graphics.lineStyle(2, 0xff0000, 0.6);
       this.graphics.strokeCircle(this.x, this.y, 25 * pulse);
     }
+
+    this.updateNamePosition(this.x, this.y);
   }
 
   checkCollision(founder, idea, focusSystem) {

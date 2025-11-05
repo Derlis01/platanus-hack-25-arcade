@@ -14,6 +14,7 @@ class Bubble extends Enemy {
       const angle = Math.random() * Math.PI * 2;
       this.sprite.setVelocity(Math.cos(angle) * 80, Math.sin(angle) * 80);
     }
+    this.createNameText(config.x, config.y);
   }
 
   update(delta, idea) {
@@ -24,6 +25,7 @@ class Bubble extends Enemy {
     this.graphics.fillCircle(this.sprite.x, this.sprite.y, 12);
     this.graphics.fillStyle(0xffffff, 0.6);
     this.graphics.fillCircle(this.sprite.x - 4, this.sprite.y - 4, 3);
+    this.updateNamePosition(this.sprite.x, this.sprite.y);
   }
 
   checkCollision(founder, idea, focusSystem) {

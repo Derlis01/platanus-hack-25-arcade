@@ -120,26 +120,42 @@ class Idea {
 
       this.graphics.restore();
     } else {
-      // Producto con brillo (stage 2)
+      // Producto premium (stage 2)
+      const pulse = 1 + Math.sin(t * Math.PI * 2) * 0.1;
       const shine = Math.sin(t * Math.PI * 2);
 
-      // Cuadrado principal
+      // Aura de éxito (glow exterior)
+      this.graphics.fillStyle(0xff6b35, 0.15);
+      this.graphics.fillCircle(x, y, 18 * pulse);
+      this.graphics.fillStyle(0xff6b35, 0.25);
+      this.graphics.fillCircle(x, y, 13 * pulse);
+
+      // Cuadrado principal con gradiente visual
       this.graphics.fillStyle(0xff6b35, 1);
       this.graphics.fillRect(x - 10, y - 10, 20, 20);
 
-      // Borde blanco
-      this.graphics.lineStyle(2.5, 0xffffff, 1);
+      // Detalles internos (cruz central)
+      this.graphics.lineStyle(1.5, 0xffaa66, 0.8);
+      this.graphics.lineBetween(x, y - 8, x, y + 8);
+      this.graphics.lineBetween(x - 8, y, x + 8, y);
+
+      // Borde doble (premium)
+      this.graphics.lineStyle(2, 0xffffff, 1);
       this.graphics.strokeRect(x - 10, y - 10, 20, 20);
+      this.graphics.lineStyle(1, 0xffcc88, 0.6);
+      this.graphics.strokeRect(x - 8, y - 8, 16, 16);
 
-      // Destello que brilla (esquina)
-      this.graphics.fillStyle(0xffffff, Math.max(0.2, shine * 0.7));
-      this.graphics.fillRect(x - 8, y - 8, 8, 8);
+      // Destellos en las esquinas
+      const cornerShine = Math.max(0.3, Math.abs(shine) * 0.9);
+      this.graphics.fillStyle(0xffffff, cornerShine);
+      this.graphics.fillCircle(x - 8, y - 8, 2);
+      this.graphics.fillCircle(x + 8, y - 8, 2);
+      this.graphics.fillCircle(x - 8, y + 8, 2);
+      this.graphics.fillCircle(x + 8, y + 8, 2);
 
-      // Pequeño punto de luz moviéndose
-      const lightX = x - 6 + Math.sin(t * Math.PI * 4) * 4;
-      const lightY = y - 6 + Math.cos(t * Math.PI * 4) * 4;
-      this.graphics.fillStyle(0xffffff, 0.6);
-      this.graphics.fillCircle(lightX, lightY, 2);
+      // Estrella de éxito (centro pulsante)
+      this.graphics.fillStyle(0xffffff, 0.7 * pulse);
+      this.graphics.fillCircle(x, y, 3);
     }
   }
 

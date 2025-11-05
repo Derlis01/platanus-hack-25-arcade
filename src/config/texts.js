@@ -9,45 +9,42 @@ const TEXTS = {
   },
   levels: [
     {
-      day: "DÍA 1: EL GARAJE",
+      day: "EL GARAJE",
       text: "Una chispa nace en la oscuridad.\nNo la dejes apagar.",
       ideaName: "La Chispa"
     },
     {
-      day: "DÍA 100: LA CONSTRUCCIÓN",
-      text: "Tu prototipo toma forma.\nCada paso cuenta. Cada error duele.",
+      day: "LA CONSTRUCCIÓN",
+      text: "Tu prototipo toma forma.",
       ideaName: "El Prototipo"
     },
     {
-      day: "DÍA 365: EL LANZAMIENTO",
+      day: "EL LANZAMIENTO",
       text: "El mundo es cruel con lo nuevo.\nDefiende lo que construiste.",
       ideaName: "El Producto"
     }
   ],
   ending: [
-    "FELICITACIONES",
+    "Victoria.",
     "",
+    "El juego terminó.",
     "",
-    "Protegiste la Idea.",
-    "Guiaste el Prototipo.",
-    "Defendiste el Producto.",
+    "Ahora continúa...",
     "",
-    "",
-    "",
-    "",
-    "Pero esto...",
-    "",
-    "fue solo el juego.",
-    "",
-    "",
-    "",
-    "",
-    "Ahora,",
-    "",
-    "te toca a vos.",
-    "",
-    "",
-    "",
-    "...en el mundo real."
+    "en la vida real."
+  ],
+  gameOver: [
+    {
+      title: "LA CHISPA SE APAGÓ",
+      message: "La duda ganó. La idea nunca comenzó."
+    },
+    {
+      title: "PROTOTIPO FALLIDO",
+      message: "Los errores fueron demasiados. Abandonaste."
+    },
+    {
+      title: "BURNOUT",
+      message: "El mundo era demasiado cruel. Te rendiste."
+    }
   ]
 };

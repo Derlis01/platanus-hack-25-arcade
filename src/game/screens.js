@@ -51,14 +51,16 @@ function showLevelIntro(scene, levelIndex, callback) {
 }
 
 function showGameOver(scene) {
+  const gameOverData = TEXTS.gameOver[gameState.currentLevel];
+
   const overlay = scene.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x000000, 0.85);
   overlay.setDepth(1000).setScrollFactor(0);
 
-  const title = scene.add.text(GAME_WIDTH / 2, 250, 'BURNOUT', {
+  const title = scene.add.text(GAME_WIDTH / 2, 250, gameOverData.title, {
     fontSize: '64px', fontFamily: 'Arial', color: '#ff0000', fontStyle: 'bold'
   }).setOrigin(0.5).setDepth(1001).setScrollFactor(0);
 
-  const subtitle = scene.add.text(GAME_WIDTH / 2, 350, 'Tu Idea se perdió en la oscuridad', {
+  const subtitle = scene.add.text(GAME_WIDTH / 2, 350, gameOverData.message, {
     fontSize: '24px', fontFamily: 'Arial', color: '#ffffff'
   }).setOrigin(0.5).setDepth(1001).setScrollFactor(0);
 
@@ -80,59 +82,65 @@ function showGameOver(scene) {
 function showEnding(scene) {
   // Limpiar completamente el nivel
   cleanupLevel(scene);
-  
-  // Limpiar cualquier texto residual (como el -8)
+
+  // Limpiar cualquier texto residual
   scene.children.list.forEach(child => {
     if (child.type === 'Text' || child.type === 'Graphics' || child.type === 'Sprite') {
       child.destroy();
     }
   });
-  
+
   // Pantalla negra limpia
   scene.cameras.main.setBackgroundColor(0x000000);
   const overlay = scene.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x000000);
 
-  let y = 100;
-  const lineConfig = [
-    { delay: 0, size: '56px', color: '#ff6b35', bold: true, spacing: 60 },      // FELICITACIONES
-    { delay: 2500, size: '28px', color: '#ffffff', bold: false, spacing: 40 },  // Protegiste la Idea
-    { delay: 3500, size: '28px', color: '#ffffff', bold: false, spacing: 40 },  // Guiaste el Prototipo
-    { delay: 4500, size: '28px', color: '#ffffff', bold: false, spacing: 40 },  // Defendiste el Producto
-    { delay: 7000, size: '32px', color: '#aaaaaa', bold: false, spacing: 30 },  // Pero esto...
-    { delay: 8500, size: '32px', color: '#aaaaaa', bold: false, spacing: 50 },  // fue solo el juego
-    { delay: 11000, size: '40px', color: '#ffffff', bold: true, spacing: 30 },  // Ahora,
-    { delay: 12500, size: '40px', color: '#ffffff', bold: true, spacing: 50 },  // te toca a vos
-    { delay: 15000, size: '36px', color: '#ff6b35', bold: true, spacing: 0 }    // ...en el mundo real
-  ];
+  let y = 160;
 
-  let configIndex = 0;
-  TEXTS.ending.forEach((line, i) => {
-    if (line !== '') {
-      const config = lineConfig[configIndex];
-      scene.time.delayedCall(config.delay, () => {
-        const text = scene.add.text(GAME_WIDTH / 2, y, line, {
-          fontSize: config.size,
-          fontFamily: 'Arial',
-          color: config.color,
-          align: 'center',
-          fontStyle: config.bold ? 'bold' : 'normal'
-        }).setOrigin(0.5).setAlpha(0).setDepth(1001);
-        
-        scene.tweens.add({ 
-          targets: text, 
-          alpha: 1, 
-          duration: 1000,
-          ease: 'Power2'
-        });
-        
-        y += config.spacing;
+  // Función para efecto typewriter elegante
+  function typewriterEffect(scene, text, x, yPos, fontSize, delay, isFinal = false) {
+    let displayedText = '';
+    const textObj = scene.add.text(x, yPos, '', {
+      fontSize: fontSize,
+      fontFamily: 'Arial',
+      color: '#ffffff',
+      align: 'center'
+    }).setOrigin(0.5).setDepth(1001);
+
+    let charIndex = 0;
+    scene.time.delayedCall(delay, () => {
+      const charEvent = scene.time.addEvent({
+        delay: 40,
+        callback: () => {
+          if (charIndex < text.length) {
+            displayedText += text[charIndex];
+            textObj.setText(displayedText);
+            charIndex++;
+          } else {
+            charEvent.remove();
+          }
+        },
+        loop: true
       });
-      configIndex++;
-    }
-  });
+    });
 
-  // Música emotiva
-  playTone(scene, 440, 0.2);
-  scene.time.delayedCall(500, () => playTone(scene, 554, 0.2));
-  scene.time.delayedCall(1000, () => playTone(scene, 659, 0.3));
+    return textObj;
+  }
+
+  // "Victoria." - aparece inmediatamente
+  typewriterEffect(scene, 'Victoria.', GAME_WIDTH / 2, y, '48px', 0);
+  y += 100;
+
+  // "El juego terminó." - después de silencio
+  typewriterEffect(scene, 'El juego terminó.', GAME_WIDTH / 2, y, '28px', 2000);
+  y += 80;
+
+  // "Ahora continúa..." - más pausa
+  typewriterEffect(scene, 'Ahora continúa...', GAME_WIDTH / 2, y, '28px', 4500);
+  y += 80;
+
+  // "en la vida real." - final
+  typewriterEffect(scene, 'en la vida real.', GAME_WIDTH / 2, y, '32px', 6800, true);
+
+  // Un solo sonido elegante al final
+  scene.time.delayedCall(7500, () => playTone(scene, 440, 0.1));
 }
