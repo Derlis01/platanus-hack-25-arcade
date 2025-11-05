@@ -5,7 +5,12 @@ function preload() {}
 
 function create() {
   gameState.currentScene = this;
-  showIntroScreen(this);
+  // DESARROLLO: Si FORCE_START_LEVEL está configurado, salta directamente a ese nivel
+  if (FORCE_START_LEVEL !== null && FORCE_START_LEVEL >= 0 && FORCE_START_LEVEL < LEVELS.length) {
+    startLevel(this, FORCE_START_LEVEL);
+  } else {
+    showIntroScreen(this);
+  }
 }
 
 function update(time, delta) {
@@ -94,7 +99,8 @@ function startLevel(scene, levelIndex) {
     });
 
     gameState.founder = new Founder(scene, level.start.x, level.start.y);
-    gameState.idea = new Idea(scene, level.start.x, level.start.y, level.ideaStage);
+    const ideaName = TEXTS.levels[levelIndex].ideaName || 'Idea';
+    gameState.idea = new Idea(scene, level.start.x, level.start.y, level.ideaStage, ideaName);
     gameState.pathRecorder = new PathRecorder();
     gameState.pathRecorder.reset(level.start.x, level.start.y);
     gameState.focusSystem = new FocusSystem(scene);
@@ -134,7 +140,7 @@ function startLevel(scene, levelIndex) {
       }).setScrollFactor(0).setDepth(1000);
     }
 
-    // Portal minimalista estilo Apple
+    // Portal verde estilo Rick & Morty (simple, sin movimiento)
     gameState.exitPortal = {
       x: level.exit.x,
       y: level.exit.y,
@@ -144,45 +150,57 @@ function startLevel(scene, levelIndex) {
         this.time += delta;
         this.graphics.clear();
 
-        const t = (this.time % 2400) / 2400; // Ciclo más lento y elegante
-        const breathe = 1 + Math.sin(t * Math.PI * 2) * 0.08; // Respiración sutil
+        const t = (this.time % 2000) / 2000; // Ciclo de animación
 
-        // Anillo exterior delgado (muy sutil)
-        const outerRadius = 45;
-        this.graphics.lineStyle(1.5, 0xffffff, 0.15 + Math.sin(t * Math.PI * 2) * 0.05);
-        this.graphics.strokeCircle(this.x, this.y, outerRadius * breathe);
+        // Aura verde exterior (glow pulsante)
+        const glowAlpha = 0.15 + Math.sin(t * Math.PI * 2) * 0.1;
+        this.graphics.fillStyle(0x00ff00, glowAlpha);
+        this.graphics.fillCircle(this.x, this.y, 50);
 
-        // Anillo principal (elegante y delgado)
-        const mainRadius = 32;
-        const alpha = 0.3 + Math.sin(t * Math.PI * 2) * 0.1;
-        this.graphics.lineStyle(2, 0xffffff, alpha);
-        this.graphics.strokeCircle(this.x, this.y, mainRadius);
+        // Anillo verde brillante exterior
+        const outerAlpha = 0.6 + Math.sin(t * Math.PI * 2) * 0.2;
+        this.graphics.lineStyle(3, 0x00ff00, outerAlpha);
+        this.graphics.strokeCircle(this.x, this.y, 40);
 
-        // Centro minimalista - punto sólido
+        // Relleno verde semitransparente (portal interior)
+        this.graphics.fillStyle(0x00ff00, 0.25);
+        this.graphics.fillCircle(this.x, this.y, 35);
+
+        // Anillo verde medio
+        this.graphics.lineStyle(2, 0x00ff00, 0.9);
+        this.graphics.strokeCircle(this.x, this.y, 28);
+
+        // Partículas verdes que giran (único movimiento circular)
+        for (let i = 0; i < 6; i++) {
+          const angle = (t + i / 6) * Math.PI * 2;
+          const px = this.x + Math.cos(angle) * 32;
+          const py = this.y + Math.sin(angle) * 32;
+          this.graphics.fillStyle(0x00ff00, 0.7);
+          this.graphics.fillCircle(px, py, 2);
+        }
+
+        // Centro brillante blanco
         this.graphics.fillStyle(0xffffff, 0.9);
-        this.graphics.fillCircle(this.x, this.y, 4 * breathe);
-
-        // Highlight sutil (pequeño punto de brillo)
-        this.graphics.fillStyle(0xffffff, 0.4 + Math.sin(t * Math.PI * 4) * 0.2);
-        this.graphics.fillCircle(this.x - 1, this.y - 1, 2);
+        this.graphics.fillCircle(this.x, this.y, 5);
       },
       destroy: function() {
         this.graphics.destroy();
       }
     };
 
-    // Texto minimalista debajo del portal
+    // Texto debajo del portal
     const exitNames = {
       0: 'Lanzar',
       1: 'Comercializar',
       2: 'Impactar'
     };
     const exitText = scene.add.text(level.exit.x, level.exit.y + 55, exitNames[levelIndex] || 'Meta', {
-      fontSize: '11px',
-      fill: '#ffffff',
-      fontFamily: 'system-ui, -apple-system, sans-serif',
-      fontStyle: 'normal',
-      alpha: 0.6
+      fontSize: '13px',
+      fill: '#00ff00',
+      fontFamily: 'Arial',
+      fontStyle: 'bold',
+      stroke: '#000000',
+      strokeThickness: 3
     }).setOrigin(0.5);
     gameState.exitText = exitText;
 

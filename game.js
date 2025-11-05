@@ -153,26 +153,71 @@ const LEVEL_0_GARAGE = {
 // =============================================================================
 // LEVEL 1: LA FÁBRICA
 // =============================================================================
+// Tema: Diseño en "U" - DEBES subir por la izquierda, cruzar arriba, y bajar
 const LEVEL_1_FACTORY = {
   id: 1,
   name: "La Fábrica",
   bg: 0x2a2a4e,
   ideaStage: 1,
   platforms: [
-    { x: 0, y: 560, w: 200, h: 40 },
-    { x: 300, y: 480, w: 150, h: 20 },
-    { x: 500, y: 380, w: 100, h: 20 },
-    { x: 200, y: 280, w: 150, h: 20, falling: true },
-    { x: 400, y: 180, w: 150, h: 20 },
-    { x: 600, y: 120, w: 180, h: 20 }
+    // Piso principal
+    { x: 0, y: 560, w: 800, h: 40 },
+
+    // === LADO IZQUIERDO: ASCENSO (con Bugs) ===
+    { x: 0, y: 500, w: 120, h: 20 },       // Base inicio
+    { x: 40, y: 450, w: 100, h: 20 },      // Escalón 1
+    { x: 80, y: 400, w: 100, h: 20 },      // Escalón 2 - Bug #1
+    { x: 40, y: 350, w: 100, h: 20 },      // Escalón 3
+    { x: 80, y: 300, w: 100, h: 20 },      // Escalón 4 - Bug #2
+    { x: 40, y: 250, w: 100, h: 20 },      // Escalón 5
+    { x: 80, y: 200, w: 120, h: 20 },      // Tope izquierdo
+
+    // === PASILLO SUPERIOR: CRUCE (con Escrutinio) ===
+    { x: 200, y: 180, w: 150, h: 20 },     // Pasillo antes del ojo
+    { x: 360, y: 160, w: 90, h: 20 },      // Plataforma BAJO el Escrutinio
+    { x: 460, y: 180, w: 150, h: 20 },     // Pasillo después del ojo
+
+    // === LADO DERECHO: DESCENSO (con más obstáculos) ===
+    { x: 620, y: 200, w: 120, h: 20 },     // Tope derecho
+    { x: 660, y: 250, w: 100, h: 20 },     // Escalón 1
+    { x: 620, y: 300, w: 100, h: 20 },     // Escalón 2
+    { x: 660, y: 350, w: 100, h: 20 },     // Escalón 3 - Bug #3
+    { x: 620, y: 400, w: 100, h: 20 },     // Escalón 4
+    { x: 680, y: 450, w: 120, h: 20 },     // Casi en el piso
+
+    // === BARRERA CENTRAL: Bloquea atajos ===
+    { x: 300, y: 560, w: 20, h: 180 },     // Muro vertical central (impide atajos)
   ],
   enemies: [
-    { type: 'bug', x: 300, y: 460, patrol: [300, 430] },
-    { type: 'eye', x: 400, y: 300, rotSpeed: 1.5 },
-    { type: 'bug', x: 600, y: 100, patrol: [600, 750] }
+    // Bug #1: Patrulla en escalón 2 (izquierda)
+    { type: 'bug', x: 120, y: 380, patrol: [80, 160], name: 'Complejidad' },
+
+    // Café #1: Recuperación en escalón 3 (lado izquierdo)
+    { type: 'coffee', x: 90, y: 330, name: 'Cafe' },
+
+    // Bug #2: Patrulla en escalón 4 (izquierda)
+    { type: 'bug', x: 120, y: 280, patrol: [80, 160], name: 'Deuda Tecnica' },
+
+    // OJO LETAL #1: Vigila el pasillo izquierdo del centro (MUERTE INSTANTÁNEA)
+    { type: 'eye', x: 275, y: 100, rotSpeed: 1.8, name: 'Fecha Limite' },
+
+    // Café #2: Recuperación justo antes del segundo ojo
+    { type: 'coffee', x: 405, y: 140, name: 'Cafe' },
+
+    // OJO LETAL #2: Vigila el pasillo derecho del centro (MUERTE INSTANTÁNEA)
+    { type: 'eye', x: 535, y: 100, rotSpeed: 1.5, name: 'Perfeccionismo' },
+
+    // Bug #3: Patrulla en escalón 3 (derecha)
+    { type: 'bug', x: 680, y: 330, patrol: [630, 730], name: 'Scope Creep' },
+
+    // Café #3: Recuperación antes del final
+    { type: 'coffee', x: 690, y: 280, name: 'Cafe' },
+
+    // Síndrome del Impostor: En el piso inferior (zona de muerte si caes)
+    { type: 'shadow', x: 500, y: 530, idle: 2000, name: 'Burnout' },
   ],
-  start: { x: 50, y: 500 },
-  exit: { x: 700, y: 80 }
+  start: { x: 50, y: 480 },
+  exit: { x: 730, y: 430 }
 };
 
 
@@ -303,11 +348,34 @@ class FocusSystem {
     this.flashBar();
   }
 
+  heal(amount) {
+    this.focus = Math.min(this.maxFocus, this.focus + amount);
+    this.showHealText(amount);
+    this.flashBarGreen();
+  }
+
   showDamageText(amount) {
     const txt = this.scene.add.text(GAME_WIDTH / 2, 60, `-${Math.floor(amount)}`, {
       fontSize: '24px',
       fontFamily: 'Arial',
       color: '#ff0000',
+      fontStyle: 'bold'
+    }).setOrigin(0.5);
+
+    this.scene.tweens.add({
+      targets: txt,
+      y: txt.y - 40,
+      alpha: 0,
+      duration: 800,
+      onComplete: () => txt.destroy()
+    });
+  }
+
+  showHealText(amount) {
+    const txt = this.scene.add.text(GAME_WIDTH / 2, 60, `+${Math.floor(amount)}`, {
+      fontSize: '24px',
+      fontFamily: 'Arial',
+      color: '#00ff00',
       fontStyle: 'bold'
     }).setOrigin(0.5);
 
@@ -327,6 +395,22 @@ class FocusSystem {
       duration: 100,
       yoyo: true,
       repeat: 2
+    });
+  }
+
+  flashBarGreen() {
+    const originalColor = this.bar.fillColor;
+    this.bar.setFillStyle(0x00ff00);
+    this.scene.tweens.add({
+      targets: this.bar,
+      alpha: 0.3,
+      duration: 100,
+      yoyo: true,
+      repeat: 2,
+      onComplete: () => {
+        this.bar.setFillStyle(originalColor);
+        this.bar.alpha = 1;
+      }
     });
   }
 
@@ -419,7 +503,7 @@ class Founder {
 // Idea
 // =============================================================================
 class Idea {
-  constructor(scene, x, y, stage) {
+  constructor(scene, x, y, stage, name = 'Idea') {
     this.scene = scene;
     this.stage = stage;
     this.sprite = scene.physics.add.sprite(x, y, null);
@@ -438,10 +522,15 @@ class Idea {
     this.isTrapped = false;
     this.trapSource = null; // Referencia al objeto que la atrapa
 
-    this.nameText = scene.add.text(x, y - 30, 'Idea', {
+    // Color del nombre según el stage
+    let nameColor = '#ffff00'; // Amarillo para chispa (stage 0)
+    if (stage === 1) nameColor = '#00ffff'; // Celeste para prototipo
+    if (stage === 2) nameColor = '#ff6b35'; // Naranja para producto
+
+    this.nameText = scene.add.text(x, y - 30, name, {
       fontSize: '12px',
       fontFamily: 'Arial',
-      color: '#ffff00',
+      color: nameColor,
       fontStyle: 'bold'
     }).setOrigin(0.5);
   }
@@ -572,12 +661,36 @@ class Enemy {
     this.config = config;
     this.type = config.type;
     this.graphics = scene.add.graphics();
+    this.name = config.name || '';
+    this.nameText = null;
   }
+
+  createNameText(x, y) {
+    if (this.name && !this.nameText) {
+      this.nameText = this.scene.add.text(x, y, this.name, {
+        fontSize: '13px',
+        fill: '#ffffff',
+        align: 'center',
+        fontStyle: 'bold',
+        stroke: '#000000',
+        strokeThickness: 3
+      });
+      this.nameText.setOrigin(0.5, 1);
+    }
+  }
+
+  updateNamePosition(x, y) {
+    if (this.nameText) {
+      this.nameText.setPosition(x, y - 15);
+    }
+  }
+
   update(delta) {}
   checkCollision(founder, idea, focusSystem) {}
   destroy() {
     if (this.graphics) this.graphics.destroy();
     if (this.sprite) this.sprite.destroy();
+    if (this.nameText) this.nameText.destroy();
   }
 }
 
@@ -589,6 +702,7 @@ function createEnemy(scene, config) {
     case 'eye': return new Eye(scene, config);
     case 'cannon': return new Cannon(scene, config);
     case 'bubble': return new Bubble(scene, config);
+    case 'coffee': return new Coffee(scene, config);
     default: return null;
   }
 }
@@ -811,6 +925,7 @@ class Bug extends Enemy {
     this.patrolMax = config.patrol[1];
     this.speed = 50;
     this.direction = 1;
+    this.createNameText(config.x, config.y);
   }
 
   update(delta) {
@@ -823,6 +938,8 @@ class Bug extends Enemy {
     this.graphics.fillCircle(this.sprite.x, this.sprite.y, 8);
     this.graphics.lineStyle(2, 0xffff00, 1);
     this.graphics.strokeCircle(this.sprite.x, this.sprite.y, 10);
+
+    this.updateNamePosition(this.sprite.x, this.sprite.y);
   }
 
   checkCollision(founder, idea, focusSystem) {
@@ -850,6 +967,7 @@ class Eye extends Enemy {
     this.rotSpeed = config.rotSpeed || 1;
     this.range = 150;
     this.freezeTimer = 0;
+    this.createNameText(config.x, config.y);
   }
 
   update(delta) {
@@ -857,31 +975,65 @@ class Eye extends Enemy {
     if (this.freezeTimer > 0) this.freezeTimer -= delta;
 
     this.graphics.clear();
+    
+    // Cuerpo del ojo (gris)
     this.graphics.fillStyle(0x666666, 1);
     this.graphics.fillCircle(this.x, this.y, 15);
+    
+    // Pupila roja que rota
     this.graphics.fillStyle(0xff0000, 1);
     const px = this.x + Math.cos(this.angle) * 5;
     const py = this.y + Math.sin(this.angle) * 5;
     this.graphics.fillCircle(px, py, 5);
-    this.graphics.lineStyle(2, this.freezeTimer > 0 ? 0xff0000 : 0x00ffff, 0.5);
-    this.graphics.lineBetween(this.x, this.y, this.x + Math.cos(this.angle) * this.range, this.y + Math.sin(this.angle) * this.range);
+    
+    // Rayo de visión (rojo cuando congela, azul cuando busca)
+    const rayColor = this.freezeTimer > 0 ? 0xff0000 : 0x00ffff;
+    const rayAlpha = this.freezeTimer > 0 ? 0.8 : 0.5;
+    this.graphics.lineStyle(3, rayColor, rayAlpha);
+    this.graphics.lineBetween(
+      this.x, 
+      this.y, 
+      this.x + Math.cos(this.angle) * this.range, 
+      this.y + Math.sin(this.angle) * this.range
+    );
+    
+    // Si está congelando, añadir un círculo pulsante de alerta
+    if (this.freezeTimer > 0) {
+      const pulse = 1 + Math.sin(Date.now() * 0.01) * 0.3;
+      this.graphics.lineStyle(2, 0xff0000, 0.6);
+      this.graphics.strokeCircle(this.x, this.y, 25 * pulse);
+    }
   }
 
   checkCollision(founder, idea, focusSystem) {
     if (!founder || !founder.sprite || !founder.sprite.body) return;
+    
+    // Si ya estamos congelando, seguir congelando al jugador
     if (this.freezeTimer > 0) {
       founder.sprite.setVelocityX(0);
-      founder.sprite.setVelocityY(0);
+      founder.sprite.setVelocityY(Math.min(founder.sprite.body.velocity.y, 0)); // Permitir caer pero no saltar
       return;
     }
+    
+    // Calcular distancia y ángulo al fundador
     const fx = founder.sprite.x - this.x;
     const fy = founder.sprite.y - this.y;
-    const fdist = Math.sqrt(fx*fx + fy*fy);
+    const fdist = Math.sqrt(fx * fx + fy * fy);
     const fangle = Math.atan2(fy, fx);
-    const angleDiff = Math.abs(((fangle - this.angle + Math.PI) % (2*Math.PI)) - Math.PI);
-    if (fdist < this.range && angleDiff < 0.2) {
-      this.freezeTimer = 3000;
+    
+    // Diferencia angular (normalizada entre -PI y PI)
+    let angleDiff = fangle - this.angle;
+    while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+    while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
+    angleDiff = Math.abs(angleDiff);
+    
+    // Si está en rango y el ángulo coincide (cono de 0.3 radianes ≈ 17 grados)
+    if (fdist < this.range && angleDiff < 0.3) {
+      this.freezeTimer = 3000; // Congela por 3 segundos
       playTone(this.scene, 800, 0.2);
+      
+      // MUERTE INSTANTÁNEA - daño de 100 (toda la vida)
+      if (focusSystem) focusSystem.damage(100);
     }
   }
 }
@@ -995,8 +1147,99 @@ class Bubble extends Enemy {
 
 
 // =============================================================================
+// Coffee - Recupera focus (vida)
+// =============================================================================
+class Coffee extends Enemy {
+  constructor(scene, config) {
+    super(scene, config);
+    this.x = config.x;
+    this.y = config.y;
+    this.collected = false;
+    this.bobTime = 0;
+    this.createNameText(config.x, config.y - 35);
+  }
+
+  update(delta) {
+    if (this.collected) return;
+    
+    this.bobTime += delta;
+    const bob = Math.sin(this.bobTime * 0.003) * 3;
+    
+    this.graphics.clear();
+    
+    // Taza de café (vista desde arriba)
+    const cy = this.y + bob;
+    
+    // Plato/base
+    this.graphics.fillStyle(0x8B4513, 1);
+    this.graphics.fillCircle(this.x, cy + 2, 14);
+    
+    // Taza principal
+    this.graphics.fillStyle(0xD2691E, 1);
+    this.graphics.fillCircle(this.x, cy, 12);
+    
+    // Café caliente (líquido oscuro)
+    this.graphics.fillStyle(0x3E2723, 1);
+    this.graphics.fillCircle(this.x, cy, 8);
+    
+    // Vapor/brillo (puntos brillantes que suben)
+    const steam1 = Math.sin(this.bobTime * 0.005) * 3;
+    const steam2 = Math.sin(this.bobTime * 0.005 + 1) * 3;
+    this.graphics.fillStyle(0xFFFFFF, 0.6);
+    this.graphics.fillCircle(this.x - 3 + steam1, cy - 15, 1.5);
+    this.graphics.fillCircle(this.x + 3 + steam2, cy - 18, 1.5);
+    
+    // Brillo en el café
+    this.graphics.fillStyle(0x8B4513, 0.5);
+    this.graphics.fillCircle(this.x - 2, cy - 2, 3);
+    
+    // Actualizar nombre
+    this.updateNamePosition(this.x, cy - 20);
+  }
+
+  checkCollision(founder, idea, focusSystem) {
+    if (this.collected) return;
+    if (!founder || !founder.sprite) return;
+    
+    const dist = Phaser.Math.Distance.Between(
+      founder.sprite.x,
+      founder.sprite.y,
+      this.x,
+      this.y
+    );
+    
+    // Si el jugador toca el café
+    if (dist < 30) {
+      this.collected = true;
+      
+      // Recuperar 30 puntos de focus
+      if (focusSystem) {
+        focusSystem.heal(30);
+      }
+      
+      // Sonido de recolección
+      playTone(this.scene, 660, 0.15);
+      
+      // Ocultar el café
+      this.graphics.clear();
+      if (this.nameText) this.nameText.setVisible(false);
+    }
+  }
+
+  destroy() {
+    if (this.graphics) this.graphics.destroy();
+    if (this.nameText) this.nameText.destroy();
+  }
+}
+
+
+// =============================================================================
 // GLOBAL STATE
 // =============================================================================
+// DESARROLLO: Cambia esto para saltarte directamente a un nivel
+// Valores: null (mostrar intro), 0 (Garaje), 1 (Fábrica), 2 (Mercado)
+const FORCE_START_LEVEL = 1;
+
 const gameState = {
   currentState: GAME_STATE.INTRO,
   currentLevel: 0,
@@ -1042,7 +1285,12 @@ function preload() {}
 
 function create() {
   gameState.currentScene = this;
-  showIntroScreen(this);
+  // DESARROLLO: Si FORCE_START_LEVEL está configurado, salta directamente a ese nivel
+  if (FORCE_START_LEVEL !== null && FORCE_START_LEVEL >= 0 && FORCE_START_LEVEL < LEVELS.length) {
+    startLevel(this, FORCE_START_LEVEL);
+  } else {
+    showIntroScreen(this);
+  }
 }
 
 function update(time, delta) {
@@ -1131,7 +1379,8 @@ function startLevel(scene, levelIndex) {
     });
 
     gameState.founder = new Founder(scene, level.start.x, level.start.y);
-    gameState.idea = new Idea(scene, level.start.x, level.start.y, level.ideaStage);
+    const ideaName = TEXTS.levels[levelIndex].ideaName || 'Idea';
+    gameState.idea = new Idea(scene, level.start.x, level.start.y, level.ideaStage, ideaName);
     gameState.pathRecorder = new PathRecorder();
     gameState.pathRecorder.reset(level.start.x, level.start.y);
     gameState.focusSystem = new FocusSystem(scene);
@@ -1171,7 +1420,7 @@ function startLevel(scene, levelIndex) {
       }).setScrollFactor(0).setDepth(1000);
     }
 
-    // Portal minimalista estilo Apple
+    // Portal verde estilo Rick & Morty (simple, sin movimiento)
     gameState.exitPortal = {
       x: level.exit.x,
       y: level.exit.y,
@@ -1181,45 +1430,57 @@ function startLevel(scene, levelIndex) {
         this.time += delta;
         this.graphics.clear();
 
-        const t = (this.time % 2400) / 2400; // Ciclo más lento y elegante
-        const breathe = 1 + Math.sin(t * Math.PI * 2) * 0.08; // Respiración sutil
+        const t = (this.time % 2000) / 2000; // Ciclo de animación
 
-        // Anillo exterior delgado (muy sutil)
-        const outerRadius = 45;
-        this.graphics.lineStyle(1.5, 0xffffff, 0.15 + Math.sin(t * Math.PI * 2) * 0.05);
-        this.graphics.strokeCircle(this.x, this.y, outerRadius * breathe);
+        // Aura verde exterior (glow pulsante)
+        const glowAlpha = 0.15 + Math.sin(t * Math.PI * 2) * 0.1;
+        this.graphics.fillStyle(0x00ff00, glowAlpha);
+        this.graphics.fillCircle(this.x, this.y, 50);
 
-        // Anillo principal (elegante y delgado)
-        const mainRadius = 32;
-        const alpha = 0.3 + Math.sin(t * Math.PI * 2) * 0.1;
-        this.graphics.lineStyle(2, 0xffffff, alpha);
-        this.graphics.strokeCircle(this.x, this.y, mainRadius);
+        // Anillo verde brillante exterior
+        const outerAlpha = 0.6 + Math.sin(t * Math.PI * 2) * 0.2;
+        this.graphics.lineStyle(3, 0x00ff00, outerAlpha);
+        this.graphics.strokeCircle(this.x, this.y, 40);
 
-        // Centro minimalista - punto sólido
+        // Relleno verde semitransparente (portal interior)
+        this.graphics.fillStyle(0x00ff00, 0.25);
+        this.graphics.fillCircle(this.x, this.y, 35);
+
+        // Anillo verde medio
+        this.graphics.lineStyle(2, 0x00ff00, 0.9);
+        this.graphics.strokeCircle(this.x, this.y, 28);
+
+        // Partículas verdes que giran (único movimiento circular)
+        for (let i = 0; i < 6; i++) {
+          const angle = (t + i / 6) * Math.PI * 2;
+          const px = this.x + Math.cos(angle) * 32;
+          const py = this.y + Math.sin(angle) * 32;
+          this.graphics.fillStyle(0x00ff00, 0.7);
+          this.graphics.fillCircle(px, py, 2);
+        }
+
+        // Centro brillante blanco
         this.graphics.fillStyle(0xffffff, 0.9);
-        this.graphics.fillCircle(this.x, this.y, 4 * breathe);
-
-        // Highlight sutil (pequeño punto de brillo)
-        this.graphics.fillStyle(0xffffff, 0.4 + Math.sin(t * Math.PI * 4) * 0.2);
-        this.graphics.fillCircle(this.x - 1, this.y - 1, 2);
+        this.graphics.fillCircle(this.x, this.y, 5);
       },
       destroy: function() {
         this.graphics.destroy();
       }
     };
 
-    // Texto minimalista debajo del portal
+    // Texto debajo del portal
     const exitNames = {
       0: 'Lanzar',
       1: 'Comercializar',
       2: 'Impactar'
     };
     const exitText = scene.add.text(level.exit.x, level.exit.y + 55, exitNames[levelIndex] || 'Meta', {
-      fontSize: '11px',
-      fill: '#ffffff',
-      fontFamily: 'system-ui, -apple-system, sans-serif',
-      fontStyle: 'normal',
-      alpha: 0.6
+      fontSize: '13px',
+      fill: '#00ff00',
+      fontFamily: 'Arial',
+      fontStyle: 'bold',
+      stroke: '#000000',
+      strokeThickness: 3
     }).setOrigin(0.5);
     gameState.exitText = exitText;
 
@@ -1385,7 +1646,7 @@ function showGameOver(scene) {
     title.destroy();
     subtitle.destroy();
     restart.destroy();
-    startLevel(scene, 0);
+    startLevel(scene, gameState.currentLevel);
   });
 }
 

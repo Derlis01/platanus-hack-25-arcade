@@ -42,6 +42,7 @@ const FILE_ORDER = [
   'src/enemies/Eye.js',
   'src/enemies/Cannon.js',
   'src/enemies/Bubble.js',
+  'src/enemies/Coffee.js',
 
   // Game logic
   'src/game/state.js',

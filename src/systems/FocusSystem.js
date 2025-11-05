@@ -64,11 +64,34 @@ class FocusSystem {
     this.flashBar();
   }
 
+  heal(amount) {
+    this.focus = Math.min(this.maxFocus, this.focus + amount);
+    this.showHealText(amount);
+    this.flashBarGreen();
+  }
+
   showDamageText(amount) {
     const txt = this.scene.add.text(GAME_WIDTH / 2, 60, `-${Math.floor(amount)}`, {
       fontSize: '24px',
       fontFamily: 'Arial',
       color: '#ff0000',
+      fontStyle: 'bold'
+    }).setOrigin(0.5);
+
+    this.scene.tweens.add({
+      targets: txt,
+      y: txt.y - 40,
+      alpha: 0,
+      duration: 800,
+      onComplete: () => txt.destroy()
+    });
+  }
+
+  showHealText(amount) {
+    const txt = this.scene.add.text(GAME_WIDTH / 2, 60, `+${Math.floor(amount)}`, {
+      fontSize: '24px',
+      fontFamily: 'Arial',
+      color: '#00ff00',
       fontStyle: 'bold'
     }).setOrigin(0.5);
 
@@ -88,6 +111,22 @@ class FocusSystem {
       duration: 100,
       yoyo: true,
       repeat: 2
+    });
+  }
+
+  flashBarGreen() {
+    const originalColor = this.bar.fillColor;
+    this.bar.setFillStyle(0x00ff00);
+    this.scene.tweens.add({
+      targets: this.bar,
+      alpha: 0.3,
+      duration: 100,
+      yoyo: true,
+      repeat: 2,
+      onComplete: () => {
+        this.bar.setFillStyle(originalColor);
+        this.bar.alpha = 1;
+      }
     });
   }
 

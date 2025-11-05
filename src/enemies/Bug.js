@@ -11,6 +11,7 @@ class Bug extends Enemy {
     this.patrolMax = config.patrol[1];
     this.speed = 50;
     this.direction = 1;
+    this.createNameText(config.x, config.y);
   }
 
   update(delta) {
@@ -23,6 +24,8 @@ class Bug extends Enemy {
     this.graphics.fillCircle(this.sprite.x, this.sprite.y, 8);
     this.graphics.lineStyle(2, 0xffff00, 1);
     this.graphics.strokeCircle(this.sprite.x, this.sprite.y, 10);
+
+    this.updateNamePosition(this.sprite.x, this.sprite.y);
   }
 
   checkCollision(founder, idea, focusSystem) {

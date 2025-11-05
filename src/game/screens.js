@@ -73,7 +73,7 @@ function showGameOver(scene) {
     title.destroy();
     subtitle.destroy();
     restart.destroy();
-    startLevel(scene, 0);
+    startLevel(scene, gameState.currentLevel);
   });
 }
 

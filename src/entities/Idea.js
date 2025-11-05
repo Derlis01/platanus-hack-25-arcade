@@ -2,7 +2,7 @@
 // Idea
 // =============================================================================
 class Idea {
-  constructor(scene, x, y, stage) {
+  constructor(scene, x, y, stage, name = 'Idea') {
     this.scene = scene;
     this.stage = stage;
     this.sprite = scene.physics.add.sprite(x, y, null);
@@ -21,10 +21,15 @@ class Idea {
     this.isTrapped = false;
     this.trapSource = null; // Referencia al objeto que la atrapa
 
-    this.nameText = scene.add.text(x, y - 30, 'Idea', {
+    // Color del nombre según el stage
+    let nameColor = '#ffff00'; // Amarillo para chispa (stage 0)
+    if (stage === 1) nameColor = '#00ffff'; // Celeste para prototipo
+    if (stage === 2) nameColor = '#ff6b35'; // Naranja para producto
+
+    this.nameText = scene.add.text(x, y - 30, name, {
       fontSize: '12px',
       fontFamily: 'Arial',
-      color: '#ffff00',
+      color: nameColor,
       fontStyle: 'bold'
     }).setOrigin(0.5);
   }
