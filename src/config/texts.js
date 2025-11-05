@@ -25,17 +25,29 @@ const TEXTS = {
     }
   ],
   ending: [
-    "Llegaste.",
-    "Protegiste la Chispa.",
+    "FELICITACIONES",
+    "",
+    "",
+    "Protegiste la Idea.",
     "Guiaste el Prototipo.",
     "Defendiste el Producto.",
     "",
-    "Felicidades, Fundador.",
-    "Has completado la simulación.",
     "",
-    "Ahora, el desafío real.",
     "",
-    "PLATANUS HACK '25",
-    "NOS VEMOS EN EL MUNDO REAL."
+    "",
+    "Pero esto...",
+    "",
+    "fue solo el juego.",
+    "",
+    "",
+    "",
+    "",
+    "Ahora,",
+    "",
+    "te toca a vos.",
+    "",
+    "",
+    "",
+    "...en el mundo real."
   ]
 };

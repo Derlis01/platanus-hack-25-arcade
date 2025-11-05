@@ -89,18 +89,30 @@ const TEXTS = {
     }
   ],
   ending: [
-    "Llegaste.",
-    "Protegiste la Chispa.",
+    "FELICITACIONES",
+    "",
+    "",
+    "Protegiste la Idea.",
     "Guiaste el Prototipo.",
     "Defendiste el Producto.",
     "",
-    "Felicidades, Fundador.",
-    "Has completado la simulación.",
     "",
-    "Ahora, el desafío real.",
     "",
-    "PLATANUS HACK '25",
-    "NOS VEMOS EN EL MUNDO REAL."
+    "",
+    "Pero esto...",
+    "",
+    "fue solo el juego.",
+    "",
+    "",
+    "",
+    "",
+    "Ahora,",
+    "",
+    "te toca a vos.",
+    "",
+    "",
+    "",
+    "...en el mundo real."
   ]
 };
 
@@ -223,6 +235,12 @@ const LEVEL_1_FACTORY = {
 
 // =============================================================================
 // LEVEL 2: EL MERCADO
+// El nivel final - un recorrido épico a través del caos del mercado
+// Zona 1: El Ruido (bubbles caóticas)
+// Zona 2: La Competencia (cannons + eyes)
+// Zona 3: La Tentación Final (magnet gigante + shadow)
+// Plataformas ajustadas: saltos máximos de ~90px (alcanzables con JUMP_VELOCITY -400)
+// Cafés estratégicos para recuperar focus en puntos críticos
 // =============================================================================
 const LEVEL_2_MARKET = {
   id: 2,
@@ -230,20 +248,58 @@ const LEVEL_2_MARKET = {
   bg: 0x4a2a4e,
   ideaStage: 2,
   platforms: [
+    // Piso base
     { x: 0, y: 560, w: 800, h: 40 },
-    { x: 100, y: 450, w: 100, h: 80 },
-    { x: 400, y: 450, w: 100, h: 80 },
-    { x: 600, y: 450, w: 100, h: 80 }
+    
+    // ZONA 1: EL RUIDO (izquierda - sección inicial)
+    { x: 50, y: 470, w: 120, h: 20 },      // -90px desde piso
+    { x: 200, y: 390, w: 100, h: 20 },     // -80px
+    { x: 80, y: 310, w: 100, h: 20 },      // -80px
+    { x: 220, y: 240, w: 90, h: 20 },      // -70px
+    
+    // ZONA 2: LA COMPETENCIA (centro - sección media)
+    { x: 350, y: 380, w: 110, h: 20 },     // Plataforma de transición
+    { x: 500, y: 300, w: 100, h: 20 },     // -80px
+    { x: 360, y: 220, w: 100, h: 20 },     // -80px
+    { x: 500, y: 150, w: 90, h: 20 },      // -70px
+    
+    // ZONA 3: EL FINAL (derecha-arriba - sección final)
+    { x: 630, y: 270, w: 120, h: 20 },     // Plataforma de transición
+    { x: 580, y: 190, w: 100, h: 20 },     // -80px
+    { x: 680, y: 110, w: 100, h: 20 }      // -80px (salida arriba)
   ],
   enemies: [
-    { type: 'cannon', x: 50, y: 50, targetIdea: true },
-    { type: 'cannon', x: 750, y: 50, targetIdea: true },
-    { type: 'cannon', x: 400, y: 0, targetIdea: true },
-    { type: 'bubble', x: 200, y: 300, bouncing: true },
-    { type: 'bubble', x: 600, y: 300, bouncing: true }
+    // === ZONA 1: EL RUIDO ===
+    // Solo 3 bubbles (antes 5) - menos caos
+    { type: 'bubble', x: 150, y: 420, bouncing: true },
+    { type: 'bubble', x: 200, y: 260, bouncing: true },
+    { type: 'bubble', x: 120, y: 340, bouncing: true },
+    
+    // CAFÉ 1: Después de sobrevivir al ruido inicial
+    { type: 'coffee', x: 220, y: 210 },
+    
+    // === ZONA 2: LA COMPETENCIA ===
+    // Solo 2 cannons (antes 3) - menos fuego cruzado
+    { type: 'cannon', x: 320, y: 10, targetIdea: true },
+    { type: 'cannon', x: 530, y: 560, targetIdea: true },
+    
+    // Solo 1 eye (antes 2) - más espacio para maniobrar
+    { type: 'eye', x: 430, y: 270, radius: 70 },
+    
+    // CAFÉ 2: Antes de la zona final (crítico)
+    { type: 'coffee', x: 520, y: 120 },
+    
+    // === ZONA 3: LA TENTACIÓN FINAL ===
+    // Magnet más pequeño y alejado
+    { type: 'magnet', x: 600, y: 230, w: 55, h: 55 },
+    
+    // Sin shadow - una amenaza menos
+    
+    // CAFÉ 3: Recompensa antes del salto final
+    { type: 'coffee', x: 630, y: 160 }
   ],
-  start: { x: 400, y: 500 },
-  exit: { x: 400, y: 100 }
+  start: { x: 50, y: 500 },
+  exit: { x: 720, y: 70 } // Arriba a la derecha - ajustado para estar en plataforma
 };
 
 
@@ -1238,7 +1294,7 @@ class Coffee extends Enemy {
 // =============================================================================
 // DESARROLLO: Cambia esto para saltarte directamente a un nivel
 // Valores: null (mostrar intro), 0 (Garaje), 1 (Fábrica), 2 (Mercado)
-const FORCE_START_LEVEL = 1;
+const FORCE_START_LEVEL = 2;
 
 const gameState = {
   currentState: GAME_STATE.INTRO,
@@ -1651,24 +1707,60 @@ function showGameOver(scene) {
 }
 
 function showEnding(scene) {
+  // Limpiar completamente el nivel
   cleanupLevel(scene);
+  
+  // Limpiar cualquier texto residual (como el -8)
+  scene.children.list.forEach(child => {
+    if (child.type === 'Text' || child.type === 'Graphics' || child.type === 'Sprite') {
+      child.destroy();
+    }
+  });
+  
+  // Pantalla negra limpia
   scene.cameras.main.setBackgroundColor(0x000000);
+  const overlay = scene.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x000000);
 
-  let y = 150;
+  let y = 100;
+  const lineConfig = [
+    { delay: 0, size: '56px', color: '#ff6b35', bold: true, spacing: 60 },      // FELICITACIONES
+    { delay: 2500, size: '28px', color: '#ffffff', bold: false, spacing: 40 },  // Protegiste la Idea
+    { delay: 3500, size: '28px', color: '#ffffff', bold: false, spacing: 40 },  // Guiaste el Prototipo
+    { delay: 4500, size: '28px', color: '#ffffff', bold: false, spacing: 40 },  // Defendiste el Producto
+    { delay: 7000, size: '32px', color: '#aaaaaa', bold: false, spacing: 30 },  // Pero esto...
+    { delay: 8500, size: '32px', color: '#aaaaaa', bold: false, spacing: 50 },  // fue solo el juego
+    { delay: 11000, size: '40px', color: '#ffffff', bold: true, spacing: 30 },  // Ahora,
+    { delay: 12500, size: '40px', color: '#ffffff', bold: true, spacing: 50 },  // te toca a vos
+    { delay: 15000, size: '36px', color: '#ff6b35', bold: true, spacing: 0 }    // ...en el mundo real
+  ];
+
+  let configIndex = 0;
   TEXTS.ending.forEach((line, i) => {
-    scene.time.delayedCall(i * 1000, () => {
-      const text = scene.add.text(GAME_WIDTH / 2, y, line, {
-        fontSize: line.length < 20 ? '32px' : '24px',
-        fontFamily: 'Arial',
-        color: line.includes('PLATANUS') ? '#ff6b35' : '#ffffff',
-        align: 'center',
-        fontStyle: line.includes('PLATANUS') ? 'bold' : 'normal'
-      }).setOrigin(0.5).setAlpha(0);
-      scene.tweens.add({ targets: text, alpha: 1, duration: 500 });
-      if (line !== '') y += 40;
-    });
+    if (line !== '') {
+      const config = lineConfig[configIndex];
+      scene.time.delayedCall(config.delay, () => {
+        const text = scene.add.text(GAME_WIDTH / 2, y, line, {
+          fontSize: config.size,
+          fontFamily: 'Arial',
+          color: config.color,
+          align: 'center',
+          fontStyle: config.bold ? 'bold' : 'normal'
+        }).setOrigin(0.5).setAlpha(0).setDepth(1001);
+        
+        scene.tweens.add({ 
+          targets: text, 
+          alpha: 1, 
+          duration: 1000,
+          ease: 'Power2'
+        });
+        
+        y += config.spacing;
+      });
+      configIndex++;
+    }
   });
 
+  // Música emotiva
   playTone(scene, 440, 0.2);
   scene.time.delayedCall(500, () => playTone(scene, 554, 0.2));
   scene.time.delayedCall(1000, () => playTone(scene, 659, 0.3));
