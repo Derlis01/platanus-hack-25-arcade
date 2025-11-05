@@ -8,7 +8,7 @@ const PLAYER_SPEED = 180;
 const JUMP_VELOCITY = -400;
 const PATH_SAMPLE_RATE = 3;
 const PATH_DELAY_FRAMES = 10;
-const MAX_DISTANCE = 130;
+const MAX_DISTANCE = 160;
 const DISTANCE_DRAIN_RATE = 1.7;
 
 const GAME_STATE = {
