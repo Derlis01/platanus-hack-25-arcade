@@ -1455,7 +1455,7 @@ class Coffee extends Enemy {
 // =============================================================================
 // DESARROLLO: Cambia esto para saltarte directamente a un nivel
 // Valores: null (mostrar intro), 0 (Garaje), 1 (Fábrica), 2 (Mercado)
-const FORCE_START_LEVEL = 2;
+const FORCE_START_LEVEL = null;
 
 const gameState = {
   currentState: GAME_STATE.INTRO,
