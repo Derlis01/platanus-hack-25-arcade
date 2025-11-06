@@ -23,7 +23,7 @@ const LEVEL_2_MARKET = {
     { x: 220, y: 240, w: 90, h: 20 },      // -70px
     
     // ZONA 2: LA COMPETENCIA (centro - sección media)
-    { x: 350, y: 380, w: 110, h: 20 },     // Plataforma de transición
+    // { x: 350, y: 380, w: 110, h: 20 },     // Plataforma de transición
     { x: 500, y: 300, w: 100, h: 20 },     // -80px
     { x: 360, y: 220, w: 100, h: 20 },     // -80px
     { x: 500, y: 150, w: 90, h: 20 },      // -70px
