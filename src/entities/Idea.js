@@ -84,78 +84,137 @@ class Idea {
     const t = (this.animTime % 1000) / 1000;  // Ciclo de 1 segundo
 
     if (this.stage === 0) {
-      // Chispa pulsante (stage 0)
-      const pulse = 1 + Math.sin(t * Math.PI * 2) * 0.3;
+      // CHISPA NEON (stage 0) - Amarillo/Pink
+      const pulse = 1 + Math.sin(t * Math.PI * 2) * 0.4;
       const size = 8 * pulse;
 
-      // Aura externa (pulsante)
-      this.graphics.fillStyle(0xffff00, 0.2);
-      this.graphics.fillCircle(x, y, 14 * pulse);
+      // Aura externa multicolor
+      this.graphics.fillStyle(NEON.YELLOW, 0.15);
+      this.graphics.fillCircle(x, y, 20 * pulse);
+      this.graphics.fillStyle(NEON.PINK, 0.2);
+      this.graphics.fillCircle(x, y, 16 * pulse);
+      this.graphics.fillStyle(NEON.YELLOW, 0.3);
+      this.graphics.fillCircle(x, y, 12 * pulse);
 
-      // Núcleo amarillo
-      this.graphics.fillStyle(0xffff00, 1);
+      // Núcleo amarillo brillante
+      this.graphics.fillStyle(NEON.YELLOW, 1);
       this.graphics.fillCircle(x, y, size);
 
-      // Centro blanco brillante
-      this.graphics.fillStyle(0xffffff, 0.8);
-      this.graphics.fillCircle(x, y, size * 0.5);
+      // Borde brillante
+      this.graphics.lineStyle(2, NEON.YELLOW, 1);
+      this.graphics.strokeCircle(x, y, size);
+
+      // Centro blanco ultra brillante
+      this.graphics.fillStyle(NEON.WHITE, 0.9);
+      this.graphics.fillCircle(x, y, size * 0.4);
+
+      // Partículas flotantes
+      for (let i = 0; i < 4; i++) {
+        const angle = (t + i * 0.25) * Math.PI * 2;
+        const dist = 12 + Math.sin(t * 2 + i) * 3;
+        const px = x + Math.cos(angle) * dist;
+        const py = y + Math.sin(angle) * dist;
+        this.graphics.fillStyle(NEON.PINK, 0.6);
+        this.graphics.fillCircle(px, py, 2);
+      }
     } else if (this.stage === 1) {
-      // Prototipo rotante (stage 1)
+      // PROTOTIPO NEON (stage 1) - Magenta/Purple
       const angle = t * Math.PI * 2;
 
-      // Cuadrados giratorios
+      // Aura rotante exterior
+      this.graphics.fillStyle(NEON.MAGENTA, 0.2);
+      this.graphics.fillCircle(x, y, 18);
+      this.graphics.fillStyle(NEON.PURPLE, 0.3);
+      this.graphics.fillCircle(x, y, 14);
+
+      // Cuadrados giratorios con glow
       this.graphics.save();
       this.graphics.translateCanvas(x, y);
       this.graphics.rotateCanvas(angle);
 
-      this.graphics.lineStyle(2, 0x00ffff, 1);
+      // Cuadrado exterior brillante
+      this.graphics.lineStyle(3, NEON.MAGENTA, 1);
       this.graphics.strokeRect(-8, -8, 16, 16);
+
+      // Glow del cuadrado exterior
+      this.graphics.lineStyle(1, NEON.MAGENTA, 0.4);
+      this.graphics.strokeRect(-10, -10, 20, 20);
+
+      // Cuadrado interior
+      this.graphics.lineStyle(2, NEON.PURPLE, 1);
       this.graphics.strokeRect(-5, -5, 10, 10);
+      this.graphics.fillStyle(NEON.PURPLE, 0.3);
+      this.graphics.fillRect(-5, -5, 10, 10);
 
       // Líneas diagonales que rotan
+      this.graphics.lineStyle(2, NEON.MAGENTA, 0.8);
       this.graphics.lineBetween(-8, -8, -4, -4);
       this.graphics.lineBetween(8, -8, 4, -4);
       this.graphics.lineBetween(-8, 8, -4, 4);
       this.graphics.lineBetween(8, 8, 4, 4);
 
+      // Puntos brillantes en esquinas
+      this.graphics.fillStyle(NEON.WHITE, 0.9);
+      this.graphics.fillCircle(-8, -8, 2);
+      this.graphics.fillCircle(8, -8, 2);
+      this.graphics.fillCircle(-8, 8, 2);
+      this.graphics.fillCircle(8, 8, 2);
+
       this.graphics.restore();
     } else {
-      // Producto premium (stage 2)
-      const pulse = 1 + Math.sin(t * Math.PI * 2) * 0.1;
+      // PRODUCTO NEON (stage 2) - Cyan/Green
+      const pulse = 1 + Math.sin(t * Math.PI * 2) * 0.15;
       const shine = Math.sin(t * Math.PI * 2);
 
-      // Aura de éxito (glow exterior)
-      this.graphics.fillStyle(0xff6b35, 0.15);
+      // Aura de éxito multicolor (glow exterior)
+      this.graphics.fillStyle(NEON.CYAN, 0.15);
+      this.graphics.fillCircle(x, y, 22 * pulse);
+      this.graphics.fillStyle(NEON.GREEN, 0.2);
       this.graphics.fillCircle(x, y, 18 * pulse);
-      this.graphics.fillStyle(0xff6b35, 0.25);
-      this.graphics.fillCircle(x, y, 13 * pulse);
+      this.graphics.fillStyle(NEON.CYAN, 0.3);
+      this.graphics.fillCircle(x, y, 14 * pulse);
 
-      // Cuadrado principal con gradiente visual
-      this.graphics.fillStyle(0xff6b35, 1);
+      // Cuadrado principal brillante
+      this.graphics.fillStyle(NEON.CYAN, 0.6);
       this.graphics.fillRect(x - 10, y - 10, 20, 20);
 
-      // Detalles internos (cruz central)
-      this.graphics.lineStyle(1.5, 0xffaa66, 0.8);
+      // Borde exterior brillante
+      this.graphics.lineStyle(3, NEON.CYAN, 1);
+      this.graphics.strokeRect(x - 10, y - 10, 20, 20);
+
+      // Glow del borde
+      this.graphics.lineStyle(1, NEON.CYAN, 0.4);
+      this.graphics.strokeRect(x - 12, y - 12, 24, 24);
+
+      // Borde interior verde
+      this.graphics.lineStyle(2, NEON.GREEN, 1);
+      this.graphics.strokeRect(x - 8, y - 8, 16, 16);
+
+      // Cruz central de energía
+      this.graphics.lineStyle(2, NEON.GREEN, 0.9);
       this.graphics.lineBetween(x, y - 8, x, y + 8);
       this.graphics.lineBetween(x - 8, y, x + 8, y);
 
-      // Borde doble (premium)
-      this.graphics.lineStyle(2, 0xffffff, 1);
-      this.graphics.strokeRect(x - 10, y - 10, 20, 20);
-      this.graphics.lineStyle(1, 0xffcc88, 0.6);
-      this.graphics.strokeRect(x - 8, y - 8, 16, 16);
+      // Destellos en las esquinas (pulsantes)
+      const cornerShine = Math.max(0.4, Math.abs(shine) * 0.95);
+      this.graphics.fillStyle(NEON.WHITE, cornerShine);
+      this.graphics.fillCircle(x - 8, y - 8, 3);
+      this.graphics.fillCircle(x + 8, y - 8, 3);
+      this.graphics.fillCircle(x - 8, y + 8, 3);
+      this.graphics.fillCircle(x + 8, y + 8, 3);
 
-      // Destellos en las esquinas
-      const cornerShine = Math.max(0.3, Math.abs(shine) * 0.9);
-      this.graphics.fillStyle(0xffffff, cornerShine);
-      this.graphics.fillCircle(x - 8, y - 8, 2);
-      this.graphics.fillCircle(x + 8, y - 8, 2);
-      this.graphics.fillCircle(x - 8, y + 8, 2);
-      this.graphics.fillCircle(x + 8, y + 8, 2);
+      // Glow de destellos
+      this.graphics.fillStyle(NEON.CYAN, cornerShine * 0.5);
+      this.graphics.fillCircle(x - 8, y - 8, 5);
+      this.graphics.fillCircle(x + 8, y - 8, 5);
+      this.graphics.fillCircle(x - 8, y + 8, 5);
+      this.graphics.fillCircle(x + 8, y + 8, 5);
 
-      // Estrella de éxito (centro pulsante)
-      this.graphics.fillStyle(0xffffff, 0.7 * pulse);
-      this.graphics.fillCircle(x, y, 3);
+      // Estrella de éxito (centro ultra brillante)
+      this.graphics.fillStyle(NEON.WHITE, 0.9 * pulse);
+      this.graphics.fillCircle(x, y, 4);
+      this.graphics.fillStyle(NEON.GREEN, 0.5 * pulse);
+      this.graphics.fillCircle(x, y, 6);
     }
   }
 

@@ -35,10 +35,28 @@ class Cannon extends Enemy {
     });
 
     this.graphics.clear();
-    this.graphics.fillStyle(0x444444, 1);
+
+    // Cañón con estilo neon
+    this.graphics.fillStyle(NEON.RED, 0.5);
     this.graphics.fillRect(this.x - 10, this.y - 5, 20, 10);
-    this.graphics.fillStyle(0xff0000, 1);
-    this.projectiles.forEach(p => this.graphics.fillCircle(p.x, p.y, 5));
+
+    // Borde brillante
+    this.graphics.lineStyle(2, NEON.RED, 1);
+    this.graphics.strokeRect(this.x - 10, this.y - 5, 20, 10);
+
+    // Proyectiles neon con glow
+    this.projectiles.forEach(p => {
+      // Glow exterior
+      this.graphics.fillStyle(NEON.RED, 0.3);
+      this.graphics.fillCircle(p.x, p.y, 8);
+      // Proyectil brillante
+      this.graphics.fillStyle(NEON.RED, 1);
+      this.graphics.fillCircle(p.x, p.y, 5);
+      // Centro blanco
+      this.graphics.fillStyle(NEON.WHITE, 0.8);
+      this.graphics.fillCircle(p.x, p.y, 2);
+    });
+
     this.updateNamePosition(this.x, this.y);
   }
 

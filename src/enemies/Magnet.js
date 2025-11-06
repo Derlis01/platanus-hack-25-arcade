@@ -33,32 +33,38 @@ class Magnet extends Enemy {
     this.pulseTimer += delta;
     this.graphics.clear();
 
-    // Dibujar sofá con forma más realista
     const centerX = this.x + this.w / 2;
     const centerY = this.y + this.h / 2;
     const armWidth = this.w * 0.15;
     const seatHeight = this.h * 0.6;
     const backHeight = this.h * 0.5;
 
-    // Color base del sofá
-    this.graphics.fillStyle(0x8B4789, 1);
+    // Efecto de atracción (pulso) - ANTES para que quede detrás
+    const pulse = Math.sin(this.pulseTimer * 0.003) * 0.3 + 0.7;
+    this.graphics.fillStyle(NEON.PURPLE, 0.15 * pulse);
+    this.graphics.fillCircle(centerX, centerY, this.radius);
+    this.graphics.fillStyle(NEON.MAGENTA, 0.1 * pulse);
+    this.graphics.fillCircle(centerX, centerY, this.radius * 0.7);
 
-    // Asiento principal
+    // Asiento principal neon
+    this.graphics.fillStyle(NEON.PURPLE, 0.6);
     this.graphics.fillRect(this.x + armWidth, centerY - seatHeight / 2, this.w - 2 * armWidth, seatHeight);
+    this.graphics.lineStyle(2, NEON.PURPLE, 1);
+    this.graphics.strokeRect(this.x + armWidth, centerY - seatHeight / 2, this.w - 2 * armWidth, seatHeight);
 
-    // Brazos izquierdo y derecho (más oscuro)
-    this.graphics.fillStyle(0x663366, 1);
+    // Brazos neon
+    this.graphics.fillStyle(NEON.PURPLE, 0.7);
     this.graphics.fillRect(this.x, centerY - seatHeight / 2, armWidth, seatHeight);
     this.graphics.fillRect(this.x + this.w - armWidth, centerY - seatHeight / 2, armWidth, seatHeight);
+    this.graphics.lineStyle(2, NEON.MAGENTA, 1);
+    this.graphics.strokeRect(this.x, centerY - seatHeight / 2, armWidth, seatHeight);
+    this.graphics.strokeRect(this.x + this.w - armWidth, centerY - seatHeight / 2, armWidth, seatHeight);
 
-    // Respaldo (atrás)
-    this.graphics.fillStyle(0x9966cc, 1);
+    // Respaldo neon
+    this.graphics.fillStyle(NEON.MAGENTA, 0.5);
     this.graphics.fillRect(this.x + armWidth * 0.5, this.y - backHeight / 2, this.w - armWidth, backHeight);
-
-    // Efecto de atracción (pulso)
-    const pulse = Math.sin(this.pulseTimer * 0.003) * 0.3 + 0.7;
-    this.graphics.fillStyle(0x9966cc, 0.15 * pulse);
-    this.graphics.fillCircle(centerX, centerY, this.radius);
+    this.graphics.lineStyle(2, NEON.MAGENTA, 1);
+    this.graphics.strokeRect(this.x + armWidth * 0.5, this.y - backHeight / 2, this.w - armWidth, backHeight);
   }
 
   checkCollision(founder, idea, focusSystem) {

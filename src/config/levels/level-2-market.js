@@ -10,7 +10,7 @@
 const LEVEL_2_MARKET = {
   id: 2,
   name: "El Mercado",
-  bg: 0x4a2a4e,
+  bg: 0x0a1a1a,
   ideaStage: 2,
   platforms: [
     // Piso base

@@ -4,7 +4,7 @@
 const LEVEL_0_GARAGE = {
   id: 0,
   name: "El Garaje",
-  bg: 0x1a1a2e,
+  bg: 0x0a0a1a,
   ideaStage: 0,
   platforms: [
     // Base (piso principal)

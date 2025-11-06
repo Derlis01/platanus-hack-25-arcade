@@ -11,15 +11,16 @@ class FocusSystem {
   }
 
   createUI() {
-    this.barBg = this.scene.add.rectangle(GAME_WIDTH / 2, 30, 300, 24, 0x333333);
-    this.bar = this.scene.add.rectangle(GAME_WIDTH / 2 - 148, 30, 296, 20, 0xff6b35);
+    this.barBg = this.scene.add.rectangle(GAME_WIDTH / 2, 30, 300, 24, 0x0a0a1a);
+    this.barBg.setAlpha(0.8);
+    this.bar = this.scene.add.rectangle(GAME_WIDTH / 2 - 148, 30, 296, 20, NEON.CYAN);
     this.bar.setOrigin(0, 0.5);
     this.barBorder = this.scene.add.rectangle(GAME_WIDTH / 2, 30, 300, 24);
-    this.barBorder.setStrokeStyle(3, 0xffffff);
+    this.barBorder.setStrokeStyle(3, NEON.CYAN);
     this.label = this.scene.add.text(GAME_WIDTH / 2, 30, 'FOCO', {
       fontSize: '14px',
       fontFamily: 'Arial',
-      color: '#ffffff',
+      color: '#00ffff',
       fontStyle: 'bold'
     }).setOrigin(0.5);
   }
@@ -43,11 +44,14 @@ class FocusSystem {
     this.bar.width = width;
 
     if (this.focus < 30) {
-      this.bar.fillColor = 0xff0000;
+      this.bar.fillColor = NEON.RED;
+      this.barBorder.setStrokeStyle(3, NEON.RED);
     } else if (this.focus < 60) {
-      this.bar.fillColor = 0xff9900;
+      this.bar.fillColor = NEON.ORANGE;
+      this.barBorder.setStrokeStyle(3, NEON.ORANGE);
     } else {
-      this.bar.fillColor = 0xff6b35;
+      this.bar.fillColor = NEON.CYAN;
+      this.barBorder.setStrokeStyle(3, NEON.CYAN);
     }
   }
 

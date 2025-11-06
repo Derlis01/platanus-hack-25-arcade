@@ -19,12 +19,23 @@ class Bubble extends Enemy {
 
   update(delta, idea) {
     this.graphics.clear();
-    this.graphics.lineStyle(3, 0x888888, 1);
+
+    // Glow exterior
+    this.graphics.fillStyle(NEON.PINK, 0.2);
+    this.graphics.fillCircle(this.sprite.x, this.sprite.y, 16);
+
+    // Borde neon brillante
+    this.graphics.lineStyle(3, NEON.PINK, 1);
     this.graphics.strokeCircle(this.sprite.x, this.sprite.y, 12);
-    this.graphics.fillStyle(0xcccccc, 0.3);
+
+    // Interior translúcido
+    this.graphics.fillStyle(NEON.PINK, 0.3);
     this.graphics.fillCircle(this.sprite.x, this.sprite.y, 12);
-    this.graphics.fillStyle(0xffffff, 0.6);
+
+    // Reflejo brillante
+    this.graphics.fillStyle(NEON.WHITE, 0.8);
     this.graphics.fillCircle(this.sprite.x - 4, this.sprite.y - 4, 3);
+
     this.updateNamePosition(this.sprite.x, this.sprite.y);
   }
 

@@ -19,3 +19,17 @@ const GAME_STATE = {
   LEVEL_COMPLETE: 'LEVEL_COMPLETE',
   ENDING: 'ENDING'
 };
+
+// NEON PALETTE - Synthwave/Cyberpunk colors
+const NEON = {
+  CYAN: 0x00ffff,
+  MAGENTA: 0xff00ff,
+  YELLOW: 0xffff00,
+  ORANGE: 0xff6600,
+  PINK: 0xff1493,
+  PURPLE: 0x9900ff,
+  GREEN: 0x00ff00,
+  BLUE: 0x0099ff,
+  RED: 0xff0033,
+  WHITE: 0xffffff
+};

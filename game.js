@@ -20,6 +20,20 @@ const GAME_STATE = {
   ENDING: 'ENDING'
 };
 
+// NEON PALETTE - Synthwave/Cyberpunk colors
+const NEON = {
+  CYAN: 0x00ffff,
+  MAGENTA: 0xff00ff,
+  YELLOW: 0xffff00,
+  ORANGE: 0xff6600,
+  PINK: 0xff1493,
+  PURPLE: 0x9900ff,
+  GREEN: 0x00ff00,
+  BLUE: 0x0099ff,
+  RED: 0xff0033,
+  WHITE: 0xffffff
+};
+
 
 // =============================================================================
 // ARCADE CONTROLS
@@ -120,7 +134,7 @@ const TEXTS = {
 const LEVEL_0_GARAGE = {
   id: 0,
   name: "El Garaje",
-  bg: 0x1a1a2e,
+  bg: 0x0a0a1a,
   ideaStage: 0,
   platforms: [
     // Base (piso principal)
@@ -166,7 +180,7 @@ const LEVEL_0_GARAGE = {
 const LEVEL_1_FACTORY = {
   id: 1,
   name: "La Fábrica",
-  bg: 0x2a2a4e,
+  bg: 0x1a0a2a,
   ideaStage: 1,
   platforms: [
     // Piso principal
@@ -228,7 +242,7 @@ const LEVEL_1_FACTORY = {
 const LEVEL_2_MARKET = {
   id: 2,
   name: "El Mercado",
-  bg: 0x4a2a4e,
+  bg: 0x0a1a1a,
   ideaStage: 2,
   platforms: [
     // Piso base
@@ -334,15 +348,16 @@ class FocusSystem {
   }
 
   createUI() {
-    this.barBg = this.scene.add.rectangle(GAME_WIDTH / 2, 30, 300, 24, 0x333333);
-    this.bar = this.scene.add.rectangle(GAME_WIDTH / 2 - 148, 30, 296, 20, 0xff6b35);
+    this.barBg = this.scene.add.rectangle(GAME_WIDTH / 2, 30, 300, 24, 0x0a0a1a);
+    this.barBg.setAlpha(0.8);
+    this.bar = this.scene.add.rectangle(GAME_WIDTH / 2 - 148, 30, 296, 20, NEON.CYAN);
     this.bar.setOrigin(0, 0.5);
     this.barBorder = this.scene.add.rectangle(GAME_WIDTH / 2, 30, 300, 24);
-    this.barBorder.setStrokeStyle(3, 0xffffff);
+    this.barBorder.setStrokeStyle(3, NEON.CYAN);
     this.label = this.scene.add.text(GAME_WIDTH / 2, 30, 'FOCO', {
       fontSize: '14px',
       fontFamily: 'Arial',
-      color: '#ffffff',
+      color: '#00ffff',
       fontStyle: 'bold'
     }).setOrigin(0.5);
   }
@@ -366,11 +381,14 @@ class FocusSystem {
     this.bar.width = width;
 
     if (this.focus < 30) {
-      this.bar.fillColor = 0xff0000;
+      this.bar.fillColor = NEON.RED;
+      this.barBorder.setStrokeStyle(3, NEON.RED);
     } else if (this.focus < 60) {
-      this.bar.fillColor = 0xff9900;
+      this.bar.fillColor = NEON.ORANGE;
+      this.barBorder.setStrokeStyle(3, NEON.ORANGE);
     } else {
-      this.bar.fillColor = 0xff6b35;
+      this.bar.fillColor = NEON.CYAN;
+      this.barBorder.setStrokeStyle(3, NEON.CYAN);
     }
   }
 
@@ -506,28 +524,51 @@ class Founder {
     const x = this.sprite.x;
     const y = this.sprite.y;
 
-    // Cuerpo (rectángulo redondeado simulado)
-    this.graphics.fillStyle(0xff6b35, 1);
+    // NEON GLOW exterior
+    this.graphics.fillStyle(NEON.CYAN, 0.15);
+    this.graphics.fillRect(x - 12, y - 9, 24, 28);
+    this.graphics.fillStyle(NEON.CYAN, 0.3);
+    this.graphics.fillRect(x - 10, y - 7, 20, 24);
+
+    // Cuerpo principal - cyan brillante
+    this.graphics.fillStyle(NEON.CYAN, 0.8);
     this.graphics.fillRect(x - 8, y - 5, 16, 20);
 
-    // Cabeza (círculo)
-    this.graphics.fillStyle(0xff6b35, 1);
+    // Borde neon brillante del cuerpo
+    this.graphics.lineStyle(2, NEON.CYAN, 1);
+    this.graphics.strokeRect(x - 8, y - 5, 16, 20);
+
+    // Líneas de detalle (scanlines)
+    this.graphics.lineStyle(1, NEON.WHITE, 0.6);
+    this.graphics.lineBetween(x - 7, y, x + 7, y);
+    this.graphics.lineBetween(x - 7, y + 5, x + 7, y + 5);
+
+    // GLOW cabeza
+    this.graphics.fillStyle(NEON.CYAN, 0.2);
+    this.graphics.fillCircle(x, y - 15, 11);
+
+    // Cabeza principal
+    this.graphics.fillStyle(NEON.CYAN, 0.8);
     this.graphics.fillCircle(x, y - 15, 8);
 
-    // Brazos simples (líneas)
-    this.graphics.lineStyle(2, 0xff6b35, 1);
-    this.graphics.lineBetween(x - 8, y - 5, x - 14, y - 3);  // Brazo izquierdo
-    this.graphics.lineBetween(x + 8, y - 5, x + 14, y - 3);  // Brazo derecho
+    // Borde neon cabeza
+    this.graphics.lineStyle(2, NEON.CYAN, 1);
+    this.graphics.strokeCircle(x, y - 15, 8);
 
-    // Ojos (pequeños círculos blancos)
-    this.graphics.fillStyle(0xffffff, 1);
+    // Brazos neon
+    this.graphics.lineStyle(3, NEON.CYAN, 1);
+    this.graphics.lineBetween(x - 8, y - 5, x - 14, y - 3);
+    this.graphics.lineBetween(x + 8, y - 5, x + 14, y - 3);
+
+    // Ojos brillantes
+    this.graphics.fillStyle(NEON.YELLOW, 1);
     this.graphics.fillCircle(x - 3, y - 17, 2);
     this.graphics.fillCircle(x + 3, y - 17, 2);
 
-    // Pupilas (pequeños círculos oscuros)
-    this.graphics.fillStyle(0x1a1a2e, 1);
-    this.graphics.fillCircle(x - 3, y - 17, 1);
-    this.graphics.fillCircle(x + 3, y - 17, 1);
+    // Glow ojos
+    this.graphics.fillStyle(NEON.YELLOW, 0.4);
+    this.graphics.fillCircle(x - 3, y - 17, 3);
+    this.graphics.fillCircle(x + 3, y - 17, 3);
   }
 
   destroy() {
@@ -624,78 +665,137 @@ class Idea {
     const t = (this.animTime % 1000) / 1000;  // Ciclo de 1 segundo
 
     if (this.stage === 0) {
-      // Chispa pulsante (stage 0)
-      const pulse = 1 + Math.sin(t * Math.PI * 2) * 0.3;
+      // CHISPA NEON (stage 0) - Amarillo/Pink
+      const pulse = 1 + Math.sin(t * Math.PI * 2) * 0.4;
       const size = 8 * pulse;
 
-      // Aura externa (pulsante)
-      this.graphics.fillStyle(0xffff00, 0.2);
-      this.graphics.fillCircle(x, y, 14 * pulse);
+      // Aura externa multicolor
+      this.graphics.fillStyle(NEON.YELLOW, 0.15);
+      this.graphics.fillCircle(x, y, 20 * pulse);
+      this.graphics.fillStyle(NEON.PINK, 0.2);
+      this.graphics.fillCircle(x, y, 16 * pulse);
+      this.graphics.fillStyle(NEON.YELLOW, 0.3);
+      this.graphics.fillCircle(x, y, 12 * pulse);
 
-      // Núcleo amarillo
-      this.graphics.fillStyle(0xffff00, 1);
+      // Núcleo amarillo brillante
+      this.graphics.fillStyle(NEON.YELLOW, 1);
       this.graphics.fillCircle(x, y, size);
 
-      // Centro blanco brillante
-      this.graphics.fillStyle(0xffffff, 0.8);
-      this.graphics.fillCircle(x, y, size * 0.5);
+      // Borde brillante
+      this.graphics.lineStyle(2, NEON.YELLOW, 1);
+      this.graphics.strokeCircle(x, y, size);
+
+      // Centro blanco ultra brillante
+      this.graphics.fillStyle(NEON.WHITE, 0.9);
+      this.graphics.fillCircle(x, y, size * 0.4);
+
+      // Partículas flotantes
+      for (let i = 0; i < 4; i++) {
+        const angle = (t + i * 0.25) * Math.PI * 2;
+        const dist = 12 + Math.sin(t * 2 + i) * 3;
+        const px = x + Math.cos(angle) * dist;
+        const py = y + Math.sin(angle) * dist;
+        this.graphics.fillStyle(NEON.PINK, 0.6);
+        this.graphics.fillCircle(px, py, 2);
+      }
     } else if (this.stage === 1) {
-      // Prototipo rotante (stage 1)
+      // PROTOTIPO NEON (stage 1) - Magenta/Purple
       const angle = t * Math.PI * 2;
 
-      // Cuadrados giratorios
+      // Aura rotante exterior
+      this.graphics.fillStyle(NEON.MAGENTA, 0.2);
+      this.graphics.fillCircle(x, y, 18);
+      this.graphics.fillStyle(NEON.PURPLE, 0.3);
+      this.graphics.fillCircle(x, y, 14);
+
+      // Cuadrados giratorios con glow
       this.graphics.save();
       this.graphics.translateCanvas(x, y);
       this.graphics.rotateCanvas(angle);
 
-      this.graphics.lineStyle(2, 0x00ffff, 1);
+      // Cuadrado exterior brillante
+      this.graphics.lineStyle(3, NEON.MAGENTA, 1);
       this.graphics.strokeRect(-8, -8, 16, 16);
+
+      // Glow del cuadrado exterior
+      this.graphics.lineStyle(1, NEON.MAGENTA, 0.4);
+      this.graphics.strokeRect(-10, -10, 20, 20);
+
+      // Cuadrado interior
+      this.graphics.lineStyle(2, NEON.PURPLE, 1);
       this.graphics.strokeRect(-5, -5, 10, 10);
+      this.graphics.fillStyle(NEON.PURPLE, 0.3);
+      this.graphics.fillRect(-5, -5, 10, 10);
 
       // Líneas diagonales que rotan
+      this.graphics.lineStyle(2, NEON.MAGENTA, 0.8);
       this.graphics.lineBetween(-8, -8, -4, -4);
       this.graphics.lineBetween(8, -8, 4, -4);
       this.graphics.lineBetween(-8, 8, -4, 4);
       this.graphics.lineBetween(8, 8, 4, 4);
 
+      // Puntos brillantes en esquinas
+      this.graphics.fillStyle(NEON.WHITE, 0.9);
+      this.graphics.fillCircle(-8, -8, 2);
+      this.graphics.fillCircle(8, -8, 2);
+      this.graphics.fillCircle(-8, 8, 2);
+      this.graphics.fillCircle(8, 8, 2);
+
       this.graphics.restore();
     } else {
-      // Producto premium (stage 2)
-      const pulse = 1 + Math.sin(t * Math.PI * 2) * 0.1;
+      // PRODUCTO NEON (stage 2) - Cyan/Green
+      const pulse = 1 + Math.sin(t * Math.PI * 2) * 0.15;
       const shine = Math.sin(t * Math.PI * 2);
 
-      // Aura de éxito (glow exterior)
-      this.graphics.fillStyle(0xff6b35, 0.15);
+      // Aura de éxito multicolor (glow exterior)
+      this.graphics.fillStyle(NEON.CYAN, 0.15);
+      this.graphics.fillCircle(x, y, 22 * pulse);
+      this.graphics.fillStyle(NEON.GREEN, 0.2);
       this.graphics.fillCircle(x, y, 18 * pulse);
-      this.graphics.fillStyle(0xff6b35, 0.25);
-      this.graphics.fillCircle(x, y, 13 * pulse);
+      this.graphics.fillStyle(NEON.CYAN, 0.3);
+      this.graphics.fillCircle(x, y, 14 * pulse);
 
-      // Cuadrado principal con gradiente visual
-      this.graphics.fillStyle(0xff6b35, 1);
+      // Cuadrado principal brillante
+      this.graphics.fillStyle(NEON.CYAN, 0.6);
       this.graphics.fillRect(x - 10, y - 10, 20, 20);
 
-      // Detalles internos (cruz central)
-      this.graphics.lineStyle(1.5, 0xffaa66, 0.8);
+      // Borde exterior brillante
+      this.graphics.lineStyle(3, NEON.CYAN, 1);
+      this.graphics.strokeRect(x - 10, y - 10, 20, 20);
+
+      // Glow del borde
+      this.graphics.lineStyle(1, NEON.CYAN, 0.4);
+      this.graphics.strokeRect(x - 12, y - 12, 24, 24);
+
+      // Borde interior verde
+      this.graphics.lineStyle(2, NEON.GREEN, 1);
+      this.graphics.strokeRect(x - 8, y - 8, 16, 16);
+
+      // Cruz central de energía
+      this.graphics.lineStyle(2, NEON.GREEN, 0.9);
       this.graphics.lineBetween(x, y - 8, x, y + 8);
       this.graphics.lineBetween(x - 8, y, x + 8, y);
 
-      // Borde doble (premium)
-      this.graphics.lineStyle(2, 0xffffff, 1);
-      this.graphics.strokeRect(x - 10, y - 10, 20, 20);
-      this.graphics.lineStyle(1, 0xffcc88, 0.6);
-      this.graphics.strokeRect(x - 8, y - 8, 16, 16);
+      // Destellos en las esquinas (pulsantes)
+      const cornerShine = Math.max(0.4, Math.abs(shine) * 0.95);
+      this.graphics.fillStyle(NEON.WHITE, cornerShine);
+      this.graphics.fillCircle(x - 8, y - 8, 3);
+      this.graphics.fillCircle(x + 8, y - 8, 3);
+      this.graphics.fillCircle(x - 8, y + 8, 3);
+      this.graphics.fillCircle(x + 8, y + 8, 3);
 
-      // Destellos en las esquinas
-      const cornerShine = Math.max(0.3, Math.abs(shine) * 0.9);
-      this.graphics.fillStyle(0xffffff, cornerShine);
-      this.graphics.fillCircle(x - 8, y - 8, 2);
-      this.graphics.fillCircle(x + 8, y - 8, 2);
-      this.graphics.fillCircle(x - 8, y + 8, 2);
-      this.graphics.fillCircle(x + 8, y + 8, 2);
+      // Glow de destellos
+      this.graphics.fillStyle(NEON.CYAN, cornerShine * 0.5);
+      this.graphics.fillCircle(x - 8, y - 8, 5);
+      this.graphics.fillCircle(x + 8, y - 8, 5);
+      this.graphics.fillCircle(x - 8, y + 8, 5);
+      this.graphics.fillCircle(x + 8, y + 8, 5);
 
-      // Estrella de éxito (centro pulsante)
-      this.graphics.fillStyle(0xffffff, 0.7 * pulse);
-      this.graphics.fillCircle(x, y, 3);
+      // Estrella de éxito (centro ultra brillante)
+      this.graphics.fillStyle(NEON.WHITE, 0.9 * pulse);
+      this.graphics.fillCircle(x, y, 4);
+      this.graphics.fillStyle(NEON.GREEN, 0.5 * pulse);
+      this.graphics.fillCircle(x, y, 6);
     }
   }
 
@@ -798,32 +898,38 @@ class Magnet extends Enemy {
     this.pulseTimer += delta;
     this.graphics.clear();
 
-    // Dibujar sofá con forma más realista
     const centerX = this.x + this.w / 2;
     const centerY = this.y + this.h / 2;
     const armWidth = this.w * 0.15;
     const seatHeight = this.h * 0.6;
     const backHeight = this.h * 0.5;
 
-    // Color base del sofá
-    this.graphics.fillStyle(0x8B4789, 1);
+    // Efecto de atracción (pulso) - ANTES para que quede detrás
+    const pulse = Math.sin(this.pulseTimer * 0.003) * 0.3 + 0.7;
+    this.graphics.fillStyle(NEON.PURPLE, 0.15 * pulse);
+    this.graphics.fillCircle(centerX, centerY, this.radius);
+    this.graphics.fillStyle(NEON.MAGENTA, 0.1 * pulse);
+    this.graphics.fillCircle(centerX, centerY, this.radius * 0.7);
 
-    // Asiento principal
+    // Asiento principal neon
+    this.graphics.fillStyle(NEON.PURPLE, 0.6);
     this.graphics.fillRect(this.x + armWidth, centerY - seatHeight / 2, this.w - 2 * armWidth, seatHeight);
+    this.graphics.lineStyle(2, NEON.PURPLE, 1);
+    this.graphics.strokeRect(this.x + armWidth, centerY - seatHeight / 2, this.w - 2 * armWidth, seatHeight);
 
-    // Brazos izquierdo y derecho (más oscuro)
-    this.graphics.fillStyle(0x663366, 1);
+    // Brazos neon
+    this.graphics.fillStyle(NEON.PURPLE, 0.7);
     this.graphics.fillRect(this.x, centerY - seatHeight / 2, armWidth, seatHeight);
     this.graphics.fillRect(this.x + this.w - armWidth, centerY - seatHeight / 2, armWidth, seatHeight);
+    this.graphics.lineStyle(2, NEON.MAGENTA, 1);
+    this.graphics.strokeRect(this.x, centerY - seatHeight / 2, armWidth, seatHeight);
+    this.graphics.strokeRect(this.x + this.w - armWidth, centerY - seatHeight / 2, armWidth, seatHeight);
 
-    // Respaldo (atrás)
-    this.graphics.fillStyle(0x9966cc, 1);
+    // Respaldo neon
+    this.graphics.fillStyle(NEON.MAGENTA, 0.5);
     this.graphics.fillRect(this.x + armWidth * 0.5, this.y - backHeight / 2, this.w - armWidth, backHeight);
-
-    // Efecto de atracción (pulso)
-    const pulse = Math.sin(this.pulseTimer * 0.003) * 0.3 + 0.7;
-    this.graphics.fillStyle(0x9966cc, 0.15 * pulse);
-    this.graphics.fillCircle(centerX, centerY, this.radius);
+    this.graphics.lineStyle(2, NEON.MAGENTA, 1);
+    this.graphics.strokeRect(this.x + armWidth * 0.5, this.y - backHeight / 2, this.w - armWidth, backHeight);
   }
 
   checkCollision(founder, idea, focusSystem) {
@@ -1031,20 +1137,30 @@ class Eye extends Enemy {
 
     this.graphics.clear();
 
-    // Cuerpo del ojo (gris)
-    this.graphics.fillStyle(0x666666, 1);
+    // Glow exterior del ojo
+    this.graphics.fillStyle(NEON.PURPLE, 0.3);
+    this.graphics.fillCircle(this.x, this.y, 18);
+
+    // Cuerpo del ojo neon
+    this.graphics.fillStyle(NEON.PURPLE, 0.7);
     this.graphics.fillCircle(this.x, this.y, 15);
 
-    // Pupila roja que rota
-    this.graphics.fillStyle(0xff0000, 1);
+    // Borde brillante
+    this.graphics.lineStyle(2, NEON.PURPLE, 1);
+    this.graphics.strokeCircle(this.x, this.y, 15);
+
+    // Pupila que rota
     const px = this.x + Math.cos(this.angle) * 5;
     const py = this.y + Math.sin(this.angle) * 5;
+    this.graphics.fillStyle(NEON.RED, 1);
     this.graphics.fillCircle(px, py, 5);
+    this.graphics.fillStyle(NEON.WHITE, 0.8);
+    this.graphics.fillCircle(px, py, 2);
 
-    // Rayo de visión (rojo cuando congela, azul cuando busca)
-    const rayColor = this.freezeTimer > 0 ? 0xff0000 : 0x00ffff;
-    const rayAlpha = this.freezeTimer > 0 ? 0.8 : 0.5;
-    this.graphics.lineStyle(3, rayColor, rayAlpha);
+    // Rayo de visión neon
+    const rayColor = this.freezeTimer > 0 ? NEON.RED : NEON.CYAN;
+    const rayAlpha = this.freezeTimer > 0 ? 1 : 0.7;
+    this.graphics.lineStyle(4, rayColor, rayAlpha);
     this.graphics.lineBetween(
       this.x,
       this.y,
@@ -1052,11 +1168,22 @@ class Eye extends Enemy {
       this.y + Math.sin(this.angle) * this.range
     );
 
-    // Si está congelando, añadir un círculo pulsante de alerta
+    // Glow del rayo
+    this.graphics.lineStyle(2, rayColor, rayAlpha * 0.3);
+    this.graphics.lineBetween(
+      this.x,
+      this.y,
+      this.x + Math.cos(this.angle) * this.range,
+      this.y + Math.sin(this.angle) * this.range
+    );
+
+    // Si está congelando, añadir círculo pulsante
     if (this.freezeTimer > 0) {
       const pulse = 1 + Math.sin(Date.now() * 0.01) * 0.3;
-      this.graphics.lineStyle(2, 0xff0000, 0.6);
+      this.graphics.lineStyle(3, NEON.RED, 0.8);
       this.graphics.strokeCircle(this.x, this.y, 25 * pulse);
+      this.graphics.lineStyle(1, NEON.RED, 0.4);
+      this.graphics.strokeCircle(this.x, this.y, 28 * pulse);
     }
 
     this.updateNamePosition(this.x, this.y);
@@ -1133,10 +1260,28 @@ class Cannon extends Enemy {
     });
 
     this.graphics.clear();
-    this.graphics.fillStyle(0x444444, 1);
+
+    // Cañón con estilo neon
+    this.graphics.fillStyle(NEON.RED, 0.5);
     this.graphics.fillRect(this.x - 10, this.y - 5, 20, 10);
-    this.graphics.fillStyle(0xff0000, 1);
-    this.projectiles.forEach(p => this.graphics.fillCircle(p.x, p.y, 5));
+
+    // Borde brillante
+    this.graphics.lineStyle(2, NEON.RED, 1);
+    this.graphics.strokeRect(this.x - 10, this.y - 5, 20, 10);
+
+    // Proyectiles neon con glow
+    this.projectiles.forEach(p => {
+      // Glow exterior
+      this.graphics.fillStyle(NEON.RED, 0.3);
+      this.graphics.fillCircle(p.x, p.y, 8);
+      // Proyectil brillante
+      this.graphics.fillStyle(NEON.RED, 1);
+      this.graphics.fillCircle(p.x, p.y, 5);
+      // Centro blanco
+      this.graphics.fillStyle(NEON.WHITE, 0.8);
+      this.graphics.fillCircle(p.x, p.y, 2);
+    });
+
     this.updateNamePosition(this.x, this.y);
   }
 
@@ -1177,12 +1322,23 @@ class Bubble extends Enemy {
 
   update(delta, idea) {
     this.graphics.clear();
-    this.graphics.lineStyle(3, 0x888888, 1);
+
+    // Glow exterior
+    this.graphics.fillStyle(NEON.PINK, 0.2);
+    this.graphics.fillCircle(this.sprite.x, this.sprite.y, 16);
+
+    // Borde neon brillante
+    this.graphics.lineStyle(3, NEON.PINK, 1);
     this.graphics.strokeCircle(this.sprite.x, this.sprite.y, 12);
-    this.graphics.fillStyle(0xcccccc, 0.3);
+
+    // Interior translúcido
+    this.graphics.fillStyle(NEON.PINK, 0.3);
     this.graphics.fillCircle(this.sprite.x, this.sprite.y, 12);
-    this.graphics.fillStyle(0xffffff, 0.6);
+
+    // Reflejo brillante
+    this.graphics.fillStyle(NEON.WHITE, 0.8);
     this.graphics.fillCircle(this.sprite.x - 4, this.sprite.y - 4, 3);
+
     this.updateNamePosition(this.sprite.x, this.sprite.y);
   }
 
@@ -1433,8 +1589,9 @@ function startLevel(scene, levelIndex) {
 
     gameState.platforms = scene.physics.add.staticGroup();
     level.platforms.forEach(p => {
-      const platform = scene.add.rectangle(p.x + p.w / 2, p.y + p.h / 2, p.w, p.h, 0x666666);
-      platform.setStrokeStyle(2, 0x888888);
+      const platform = scene.add.rectangle(p.x + p.w / 2, p.y + p.h / 2, p.w, p.h, 0x1a1a2e);
+      platform.setStrokeStyle(3, NEON.MAGENTA);
+      platform.setAlpha(0.6);
       scene.physics.add.existing(platform, true);
       gameState.platforms.add(platform);
     });

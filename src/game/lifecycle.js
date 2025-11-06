@@ -92,8 +92,9 @@ function startLevel(scene, levelIndex) {
 
     gameState.platforms = scene.physics.add.staticGroup();
     level.platforms.forEach(p => {
-      const platform = scene.add.rectangle(p.x + p.w / 2, p.y + p.h / 2, p.w, p.h, 0x666666);
-      platform.setStrokeStyle(2, 0x888888);
+      const platform = scene.add.rectangle(p.x + p.w / 2, p.y + p.h / 2, p.w, p.h, 0x1a1a2e);
+      platform.setStrokeStyle(3, NEON.MAGENTA);
+      platform.setAlpha(0.6);
       scene.physics.add.existing(platform, true);
       gameState.platforms.add(platform);
     });

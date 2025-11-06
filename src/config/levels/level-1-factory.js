@@ -5,7 +5,7 @@
 const LEVEL_1_FACTORY = {
   id: 1,
   name: "La Fábrica",
-  bg: 0x2a2a4e,
+  bg: 0x1a0a2a,
   ideaStage: 1,
   platforms: [
     // Piso principal
