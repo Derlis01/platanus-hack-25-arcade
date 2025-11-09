@@ -1,7 +1,6 @@
 # 🎮 Vestigium - Architecture Documentation
 
 ## 📋 Overview
-
 This game is built using a **modular architecture** during development but compiles to a **single file** (`game.js`) for submission. This approach allows for:
 
 - ✅ Easy iteration on specific game components
