@@ -89,7 +89,7 @@ const TEXTS = {
     {
       day: "EL GARAJE",
       text: "Una chispa nace en la oscuridad.\nNo la dejes apagar.",
-      ideaName: "La Chispa"
+      ideaName: "La idea"
     },
     {
       day: "LA CONSTRUCCIÓN",
