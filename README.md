@@ -1,4 +1,4 @@
-# 🎮 Platanus Hack 25: Arcade Challenge
+# 🎮 Platanus Hack 25: Arcade Challenges
 
 At [Platanus Hack 25](https://hack.platan.us) we will have an arcade machine. While we could put some cool retro games on it, it is way better if it can be turned into a challenge.
 
